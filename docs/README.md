@@ -1,6 +1,7 @@
 # FleetSync Documentation
 
-Bu klasör BM 321 dersi Sprint dokümantasyonlarını ve OpenAPI sözleşmelerini içerir.
-- `openapi.yaml`: Taslak API Sözleşmesi (Architect & Backend)
-- `problem_definition.md`: Problem Tanımı ve Sistem Vizyonu
-- `raci_matrix.md`: Ekip Rol Dağılımı ve RACI Matrisi
+This directory contains the Sprint documentation and API specifications for the BM 321 Software Engineering project.
+
+- `openapi.yaml`: Draft API Specification (Architect & Backend)
+- `problem_definition.md`: Problem Definition & System Vision (Product Owner)
+- `raci_matrix.md`: Team Role Assignments & RACI Matrix (Scrum Master)
