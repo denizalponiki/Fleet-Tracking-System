@@ -1,6 +1,6 @@
 # FleetSync Documentation
 
-This directory contains the Sprint documentation, architectural designs, API specifications, and testing reports for the CENG 321 Software Engineering project.
+This directory contains the Sprint documentation, architectural designs, API specifications, and testing reports for the SENG 321 Software Engineering project.
 
 ## Document Ownership & Module Responsibilities
 - `problem_definition.md` — Product Owner & Requirements Engineer (Ahmet Can Vurmaz)
