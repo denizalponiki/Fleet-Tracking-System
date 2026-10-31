@@ -1,0 +1,2371 @@
+openapi: 3.1.0
+info:
+  title: FleetSync API
+  version: 0.1.0
+  summary: Smart fleet management, periodic maintenance and carpooling platform
+  description: |
+    REST API contract for FleetSync (API-first). This file is the single source of truth:
+    the backend implements these operations, the frontend generates its client from these
+    schemas, and QA derives test cases from them.
+
+    **Conventions**
+    - Every request requires `Authorization: Bearer <JWT>`, except `POST /auth/login`.
+    - Timestamps are ISO 8601 with offset (`2026-11-12T08:00:00+03:00`); dates are `YYYY-MM-DD`.
+    - Identifiers are UUIDs.
+    - Errors use RFC 9457 `application/problem+json`; clients branch on the `code` field.
+      400 means invalid input, 409 means a state or scheduling conflict, 422 means a business rule violation.
+    - List endpoints are paginated with `page` (zero-based) and `size`.
+
+    **Roles:** `STAFF` (staff member / driver), `FLEET_MANAGER`, `MAINTENANCE_OFFICER`.
+
+    **Change policy:** every change to this file goes through a pull request and needs the Lead Architect's approval (CODEOWNERS).
+  license:
+    name: MIT
+    identifier: MIT
+  contact:
+    name: FleetSync Team (SENG 321)
+    url: https://github.com/denizalponiki/Fleet-Tracking-System
+externalDocs:
+  description: Project repository and documentation
+  url: https://github.com/denizalponiki/Fleet-Tracking-System/tree/develop/docs
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local development (docker compose)
+  - url: http://localhost:4010
+    description: Prism mock server (frontend development)
+security:
+  - bearerAuth: []
+
+tags:
+  - name: auth
+    description: Login and session. Owner Ahmet Can Vurmaz (Product Owner).
+  - name: drivers
+    description: Driver profile, driving licence and driving eligibility checks. Owner Ahmet Can Vurmaz (Product Owner).
+  - name: locations
+    description: Predefined trip destinations. Owner Ahmet Tarık Orhan (Backend).
+  - name: vehicles
+    description: Vehicle inventory and status transitions. Owner Ali Eren Kurt (Lead Architect).
+  - name: reservations
+    description: Vehicle recommendation, reservations and conflict prevention. Owner Ahmet Tarık Orhan (Backend).
+  - name: carpool
+    description: Ride sharing that matches staff travelling to the same destination. Owner Ahmet Tarık Orhan (Backend).
+  - name: handover
+    description: Pickup / return checklist and damage reports. Owner Mehmet Umut Oğuzcan (Scrum Master).
+  - name: maintenance
+    description: Mileage- and date-based predictive maintenance rule engine and alerts. Owner Ali Eren Kurt (Lead Architect).
+  - name: fuel
+    description: Fuel receipts, expenses and consumption anomalies. Owner Abdullah Tecimen (QA).
+  - name: reports
+    description: Cost, carbon footprint and utilisation reports. Owner Deniz Alp Oniki (DevOps).
+
+paths:
+  # ---------------------------------------------------------------- auth
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Log in with email and password and receive a JWT
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginRequest' }
+            example:
+              email: elif.demir@campus.edu.tr
+              password: demo1234
+      responses:
+        '200':
+          description: Login succeeded
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401':
+          description: Wrong email or password
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+              example:
+                type: https://fleetsync.local/problems/invalid-credentials
+                title: Invalid credentials
+                status: 401
+                code: INVALID_CREDENTIALS
+                detail: The email or password is incorrect.
+
+  /me:
+    get:
+      operationId: getCurrentUser
+      tags: [auth]
+      summary: Return the signed-in user
+      responses:
+        '200':
+          description: Current user
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /users:
+    get:
+      operationId: listUsers
+      tags: [auth]
+      summary: List users
+      description: 'Requires role: FLEET_MANAGER.'
+      parameters:
+        - name: role
+          in: query
+          schema: { $ref: '#/components/schemas/Role' }
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: User list
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserPage' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      operationId: createUser
+      tags: [auth]
+      summary: Create a user
+      description: 'Requires role: FLEET_MANAGER.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/NewUser' }
+      responses:
+        '201':
+          description: User created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409':
+          description: A user with this email already exists
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+              example:
+                type: https://fleetsync.local/problems/duplicate-email
+                title: Email already in use
+                status: 409
+                code: DUPLICATE_EMAIL
+                detail: A user with elif.demir@campus.edu.tr already exists.
+
+  # ---------------------------------------------------------------- drivers
+  /drivers/{driverId}:
+    parameters:
+      - $ref: '#/components/parameters/DriverId'
+    get:
+      operationId: getDriverProfile
+      tags: [drivers]
+      summary: Return a driver profile with its licences
+      responses:
+        '200':
+          description: Driver profile
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DriverProfile' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      operationId: updateDriverProfile
+      tags: [drivers]
+      summary: Update a driver profile
+      description: 'Allowed for the profile owner or FLEET_MANAGER.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DriverProfileUpdate' }
+      responses:
+        '200':
+          description: Updated profile
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DriverProfile' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /drivers/{driverId}/licenses:
+    parameters:
+      - $ref: '#/components/parameters/DriverId'
+    get:
+      operationId: listDriverLicenses
+      tags: [drivers]
+      summary: List a driver's licences
+      responses:
+        '200':
+          description: Licence list
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/License' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    post:
+      operationId: addDriverLicense
+      tags: [drivers]
+      summary: Add a licence to a driver
+      description: A new licence starts with `verified=false`; a FLEET_MANAGER verifies it after seeing the document.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/NewLicense' }
+      responses:
+        '201':
+          description: Licence added
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/License' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: A licence of this class is already registered
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+              example:
+                type: https://fleetsync.local/problems/duplicate-license
+                title: Licence already registered
+                status: 409
+                code: DUPLICATE_LICENSE
+                detail: The driver already has a class B licence on file.
+
+  /drivers/{driverId}/licenses/{licenseId}/verify:
+    parameters:
+      - $ref: '#/components/parameters/DriverId'
+      - name: licenseId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      operationId: verifyDriverLicense
+      tags: [drivers]
+      summary: Mark a licence as verified after checking the physical document
+      description: 'Requires role: FLEET_MANAGER. Only verified licences count in eligibility checks.'
+      responses:
+        '200':
+          description: Verified licence
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/License' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /drivers/{driverId}/eligibility:
+    parameters:
+      - $ref: '#/components/parameters/DriverId'
+    get:
+      operationId: checkDriverEligibility
+      tags: [drivers]
+      summary: Check whether a driver may drive a given vehicle until a given time
+      description: The licence class must match the vehicle and the licence must still be valid when the trip ends.
+      parameters:
+        - name: vehicleId
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+        - name: endAt
+          in: query
+          required: true
+          description: Trip end; the licence must be valid at this time
+          schema: { type: string, format: date-time }
+      responses:
+        '200':
+          description: Eligibility result
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DriverEligibility' }
+              examples:
+                eligible:
+                  summary: Eligible
+                  value:
+                    driverId: 5a8c3e10-0000-4000-8000-000000000001
+                    vehicleId: 0b6f1c2a-0000-4000-8000-000000000102
+                    eligible: true
+                    reasons: []
+                expired:
+                  summary: Licence expires before the trip ends
+                  value:
+                    driverId: 5a8c3e10-0000-4000-8000-000000000001
+                    vehicleId: 0b6f1c2a-0000-4000-8000-000000000102
+                    eligible: false
+                    reasons:
+                      - code: LICENSE_EXPIRED
+                        message: The class B licence expires on 2026-11-10; the trip ends on 2026-11-13.
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  # ---------------------------------------------------------------- locations
+  /locations:
+    get:
+      operationId: listLocations
+      tags: [locations]
+      summary: List trip destinations and their distance from the main campus
+      responses:
+        '200':
+          description: Location list
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Location' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  # ---------------------------------------------------------------- vehicles
+  /vehicles:
+    get:
+      operationId: listVehicles
+      tags: [vehicles]
+      summary: List vehicles with the data shown on vehicle status cards
+      parameters:
+        - name: status
+          in: query
+          schema: { $ref: '#/components/schemas/VehicleStatus' }
+        - name: type
+          in: query
+          schema: { $ref: '#/components/schemas/VehicleType' }
+        - name: minSeats
+          in: query
+          schema: { type: integer, minimum: 1 }
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: Vehicle list
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/VehiclePage' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      operationId: createVehicle
+      tags: [vehicles]
+      summary: Add a vehicle to the fleet
+      description: 'Requires role: FLEET_MANAGER. A maintenance plan is created for every active rule, starting from the vehicle''s current mileage and today''s date.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/NewVehicle' }
+            example:
+              plate: 06 FS 104
+              brandModel: Minibus 16+1
+              type: MINIBUS
+              seatCount: 17
+              fuelType: DIESEL
+              tankCapacityLiters: 80
+              requiredLicenseClass: D1
+              odometerKm: 21000
+              modelYear: 2023
+      responses:
+        '201':
+          description: Vehicle added
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Vehicle' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409':
+          description: Plate already registered
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+              example:
+                type: https://fleetsync.local/problems/duplicate-plate
+                title: Plate already registered
+                status: 409
+                code: DUPLICATE_PLATE
+                detail: A vehicle with plate 06 FS 104 is already in the fleet.
+
+  /vehicles/recommendations:
+    get:
+      operationId: getVehicleRecommendations
+      tags: [reservations]
+      summary: Recommend suitable vehicles for a trip and list unsuitable ones with reasons
+      description: |
+        Checks run in this order: seat capacity → driver licence → calendar conflicts → maintenance eligibility (rule engine) → scoring.
+        Maintenance eligibility: a vehicle is blocked if, for any rule, `remainingKm < estimatedKm + 100`
+        or the rule's due date falls before the trip ends.
+        Score: vehicles with more remaining maintenance mileage and lower utilisation rank higher.
+      parameters:
+        - name: startAt
+          in: query
+          required: true
+          schema: { type: string, format: date-time }
+          example: '2026-11-12T08:00:00+03:00'
+        - name: endAt
+          in: query
+          required: true
+          schema: { type: string, format: date-time }
+          example: '2026-11-13T19:00:00+03:00'
+        - name: seats
+          in: query
+          required: true
+          description: Seats needed, driver included
+          schema: { type: integer, minimum: 1, maximum: 60 }
+          example: 7
+        - name: estimatedKm
+          in: query
+          required: true
+          description: Estimated round-trip distance in km
+          schema: { type: integer, minimum: 1, maximum: 5000 }
+          example: 400
+        - name: destinationId
+          in: query
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Recommendation result
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RecommendationResult' }
+              example:
+                query:
+                  startAt: '2026-11-12T08:00:00+03:00'
+                  endAt: '2026-11-13T19:00:00+03:00'
+                  seats: 7
+                  estimatedKm: 400
+                recommended:
+                  - vehicle:
+                      id: 0b6f1c2a-0000-4000-8000-000000000102
+                      plate: 06 FS 102
+                      type: MINIBUS
+                      seatCount: 9
+                      odometerKm: 59450
+                      status: AVAILABLE
+                    score: 0.72
+                    warnings:
+                      - code: MAINTENANCE_DUE_SOON
+                        message: Oil change due in 550 km.
+                blocked:
+                  - vehicle:
+                      id: 0b6f1c2a-0000-4000-8000-000000000101
+                      plate: 06 FS 101
+                      type: MINIBUS
+                      seatCount: 9
+                      odometerKm: 39900
+                      status: AVAILABLE
+                    reasons:
+                      - code: MAINTENANCE_DUE
+                        message: Oil change due in 100 km; the trip needs 400 km plus a 100 km safety buffer.
+                  - vehicle:
+                      id: 0b6f1c2a-0000-4000-8000-000000000103
+                      plate: 06 FS 103
+                      type: SEDAN
+                      seatCount: 5
+                      odometerKm: 12300
+                      status: AVAILABLE
+                    reasons:
+                      - code: INSUFFICIENT_SEATS
+                        message: The vehicle has 5 seats; 7 are needed.
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /vehicles/{vehicleId}:
+    parameters:
+      - $ref: '#/components/parameters/VehicleId'
+    get:
+      operationId: getVehicle
+      tags: [vehicles]
+      summary: Return vehicle details
+      responses:
+        '200':
+          description: Vehicle
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Vehicle' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      operationId: updateVehicle
+      tags: [vehicles]
+      summary: Update vehicle details
+      description: 'Requires role: FLEET_MANAGER. Mileage and status cannot be changed here; mileage changes through handover and maintenance records, status through `/status`.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/VehicleUpdate' }
+      responses:
+        '200':
+          description: Updated vehicle
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Vehicle' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /vehicles/{vehicleId}/status:
+    parameters:
+      - $ref: '#/components/parameters/VehicleId'
+    post:
+      operationId: changeVehicleStatus
+      tags: [vehicles]
+      summary: Change a vehicle's status manually
+      description: |
+        Requires role: FLEET_MANAGER or MAINTENANCE_OFFICER. Allowed transitions:
+        AVAILABLE→IN_MAINTENANCE, AVAILABLE→OUT_OF_SERVICE, OUT_OF_SERVICE→IN_MAINTENANCE.
+        Transitions into and out of IN_USE happen only through the handover checklist; IN_MAINTENANCE→AVAILABLE only through a maintenance record.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/VehicleStatusChange' }
+      responses:
+        '200':
+          description: Vehicle with its new status
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Vehicle' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: This status transition is not allowed
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+              example:
+                type: https://fleetsync.local/problems/invalid-status-transition
+                title: Invalid status transition
+                status: 409
+                code: INVALID_STATUS_TRANSITION
+                detail: A vehicle that is IN_USE cannot be set to AVAILABLE manually; a return checklist is required.
+
+  # ---------------------------------------------------------------- reservations
+  /reservations:
+    get:
+      operationId: listReservations
+      tags: [reservations]
+      summary: List reservations
+      description: STAFF see their own reservations and the ones they joined as passengers; FLEET_MANAGER sees all.
+      parameters:
+        - name: status
+          in: query
+          schema: { $ref: '#/components/schemas/ReservationStatus' }
+        - $ref: '#/components/parameters/VehicleIdQuery'
+        - name: from
+          in: query
+          schema: { type: string, format: date-time }
+        - name: to
+          in: query
+          schema: { type: string, format: date-time }
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: Reservation list
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReservationPage' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      operationId: createReservation
+      tags: [reservations]
+      summary: Reserve a vehicle for a trip
+      description: The server repeats every check of the recommendation endpoint; it does not trust the client's choice.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/NewReservation' }
+            example:
+              vehicleId: 0b6f1c2a-0000-4000-8000-000000000102
+              destinationId: 9c2b0000-0000-4000-8000-00000000c042
+              purpose: Laboratory visit at the Konya campus
+              startAt: '2026-11-12T08:00:00+03:00'
+              endAt: '2026-11-13T19:00:00+03:00'
+              estimatedKm: 400
+              seatsNeeded: 7
+              allowRideSharing: true
+      responses:
+        '201':
+          description: Reservation created
+          headers:
+            Location:
+              description: URL of the new reservation
+              schema: { type: string }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Reservation' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: The vehicle cannot be used in this period
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+              examples:
+                conflict:
+                  summary: Calendar conflict
+                  value:
+                    type: https://fleetsync.local/problems/reservation-conflict
+                    title: Reservation conflict
+                    status: 409
+                    code: RESERVATION_CONFLICT
+                    detail: 06 FS 102 is already reserved between 2026-11-12 08:00 and 2026-11-13 19:00.
+                maintenanceDue:
+                  summary: Vehicle blocked because maintenance is due soon
+                  value:
+                    type: https://fleetsync.local/problems/vehicle-maintenance-due
+                    title: Vehicle blocked for maintenance
+                    status: 409
+                    code: VEHICLE_MAINTENANCE_DUE
+                    detail: 06 FS 101 is due for an oil change in 100 km; the trip needs 400 km.
+                    suggestedVehicleIds:
+                      - 0b6f1c2a-0000-4000-8000-000000000102
+                unavailable:
+                  summary: Vehicle is in maintenance or out of service
+                  value:
+                    type: https://fleetsync.local/problems/vehicle-unavailable
+                    title: Vehicle unavailable
+                    status: 409
+                    code: VEHICLE_UNAVAILABLE
+                    detail: 06 FS 101 is currently IN_MAINTENANCE.
+        '422':
+          description: Business rule violation
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+              examples:
+                licenseExpired:
+                  summary: Licence expires before the trip ends
+                  value:
+                    type: https://fleetsync.local/problems/license-expired
+                    title: Licence not valid
+                    status: 422
+                    code: LICENSE_EXPIRED
+                    detail: The class B licence expires on 2026-11-10.
+                licenseClass:
+                  summary: Licence class does not match the vehicle
+                  value:
+                    type: https://fleetsync.local/problems/license-class-mismatch
+                    title: Licence class mismatch
+                    status: 422
+                    code: LICENSE_CLASS_MISMATCH
+                    detail: 06 FS 104 requires a class D1 licence.
+                seats:
+                  summary: Not enough seats
+                  value:
+                    type: https://fleetsync.local/problems/seat-capacity-exceeded
+                    title: Seat capacity exceeded
+                    status: 422
+                    code: SEAT_CAPACITY_EXCEEDED
+                    detail: 06 FS 103 has 5 seats; 7 were requested.
+
+  /reservations/{reservationId}:
+    parameters:
+      - $ref: '#/components/parameters/ReservationId'
+    get:
+      operationId: getReservation
+      tags: [reservations]
+      summary: Return reservation details
+      responses:
+        '200':
+          description: Reservation
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Reservation' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /reservations/{reservationId}/cancel:
+    parameters:
+      - $ref: '#/components/parameters/ReservationId'
+    post:
+      operationId: cancelReservation
+      tags: [reservations]
+      summary: Cancel a reservation
+      description: Only a CONFIRMED reservation can be cancelled, by its owner or a FLEET_MANAGER. Passengers are notified.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CancelRequest' }
+      responses:
+        '200':
+          description: Cancelled reservation
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Reservation' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: A started or finished reservation cannot be cancelled
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+              example:
+                type: https://fleetsync.local/problems/reservation-not-cancellable
+                title: Reservation cannot be cancelled
+                status: 409
+                code: RESERVATION_NOT_CANCELLABLE
+                detail: The vehicle has already been picked up (ACTIVE); the reservation cannot be cancelled.
+
+  # ---------------------------------------------------------------- carpool
+  /rides/matches:
+    get:
+      operationId: findRideMatches
+      tags: [carpool]
+      summary: Find reservations going the same way with free seats
+      description: 'Matching rule: same destination, departure within `toleranceMinutes`, `allowRideSharing=true` and free seats >= `seats`.'
+      parameters:
+        - name: destinationId
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+        - name: departAt
+          in: query
+          required: true
+          schema: { type: string, format: date-time }
+        - name: seats
+          in: query
+          schema: { type: integer, minimum: 1, default: 1 }
+        - name: toleranceMinutes
+          in: query
+          schema: { type: integer, minimum: 0, maximum: 240, default: 30 }
+      responses:
+        '200':
+          description: Matching rides, sorted by departure difference
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/RideMatch' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /reservations/{reservationId}/passengers:
+    parameters:
+      - $ref: '#/components/parameters/ReservationId'
+    post:
+      operationId: joinRide
+      tags: [carpool]
+      summary: Add the signed-in user to a ride as a passenger
+      responses:
+        '201':
+          description: Passenger added; returns the updated reservation
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Reservation' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: The user already joined, or the ride is closed to sharing or has started
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+              example:
+                type: https://fleetsync.local/problems/already-joined
+                title: Already joined
+                status: 409
+                code: ALREADY_JOINED
+                detail: You are already a passenger on this ride.
+        '422':
+          description: No free seats left
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+              example:
+                type: https://fleetsync.local/problems/seat-capacity-exceeded
+                title: Seat capacity exceeded
+                status: 422
+                code: SEAT_CAPACITY_EXCEEDED
+                detail: 06 FS 102 is full (9/9).
+
+  /reservations/{reservationId}/passengers/{userId}:
+    parameters:
+      - $ref: '#/components/parameters/ReservationId'
+      - name: userId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    delete:
+      operationId: leaveRide
+      tags: [carpool]
+      summary: Remove a passenger from a ride
+      description: Allowed for the passenger, the reservation owner or a FLEET_MANAGER, before the trip starts.
+      responses:
+        '204':
+          description: Passenger removed
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/InvalidReservationState' }
+
+  # ---------------------------------------------------------------- handover
+  /checklist-templates:
+    get:
+      operationId: listChecklistTemplates
+      tags: [handover]
+      summary: Return the pickup and return checklist templates
+      responses:
+        '200':
+          description: Templates
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/ChecklistTemplate' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /reservations/{reservationId}/pickup:
+    parameters:
+      - $ref: '#/components/parameters/ReservationId'
+    post:
+      operationId: recordPickup
+      tags: [handover]
+      summary: Pick up the vehicle (checklist); sets the reservation to ACTIVE and the vehicle to IN_USE
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PickupRequest' }
+            example:
+              odometerKm: 59450
+              fuelLevelPercent: 90
+              items:
+                - { code: TIRES, ok: true }
+                - { code: LIGHTS, ok: true }
+                - { code: DOCUMENTS, ok: true }
+                - { code: CLEANLINESS, ok: false, note: Stain on the rear seat }
+      responses:
+        '201':
+          description: Pickup record
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/HandoverRecord' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/InvalidReservationState' }
+        '422':
+          description: Mileage goes backwards or a required checklist item is missing
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+              examples:
+                odometer:
+                  summary: Mileage lower than the vehicle's recorded mileage
+                  value:
+                    type: https://fleetsync.local/problems/odometer-decreased
+                    title: Invalid mileage
+                    status: 422
+                    code: ODOMETER_DECREASED
+                    detail: The entered mileage (59,000 km) cannot be lower than the vehicle's recorded mileage (59,450 km).
+                checklist:
+                  summary: Required item missing
+                  value:
+                    type: https://fleetsync.local/problems/checklist-incomplete
+                    title: Checklist incomplete
+                    status: 422
+                    code: CHECKLIST_INCOMPLETE
+                    detail: 'Required items not checked: TIRES, LIGHTS.'
+
+  /reservations/{reservationId}/return:
+    parameters:
+      - $ref: '#/components/parameters/ReservationId'
+    post:
+      operationId: recordReturn
+      tags: [handover]
+      summary: Return the vehicle, update its mileage and run the maintenance rule engine
+      description: |
+        The reservation becomes COMPLETED, the vehicle mileage is updated and a `TripCompletedEvent` is published.
+        The maintenance rule engine runs in the same transaction. If any rule is DUE, the vehicle becomes
+        IN_MAINTENANCE and the generated alerts are returned in the response; otherwise the vehicle becomes AVAILABLE.
+        `kmLimitExceeded=true` when the actual distance exceeds the estimate by more than 30%.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReturnRequest' }
+            example:
+              odometerKm: 60020
+              fuelLevelPercent: 35
+              items:
+                - { code: TIRES, ok: true }
+                - { code: LIGHTS, ok: true }
+                - { code: DOCUMENTS, ok: true }
+                - { code: CLEANLINESS, ok: true }
+              damages: []
+      responses:
+        '201':
+          description: Return result
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReturnResult' }
+              example:
+                handover:
+                  id: 6e1d0000-0000-4000-8000-0000000000b2
+                  reservationId: 3f6a0000-0000-4000-8000-0000000000a1
+                  type: RETURN
+                  odometerKm: 60020
+                  fuelLevelPercent: 35
+                  items:
+                    - { code: TIRES, ok: true }
+                    - { code: LIGHTS, ok: true }
+                    - { code: DOCUMENTS, ok: true }
+                    - { code: CLEANLINESS, ok: true }
+                  recordedBy: { id: 5a8c3e10-0000-4000-8000-000000000001, fullName: Elif Demir }
+                  recordedAt: '2026-11-13T18:40:00+03:00'
+                tripKm: 570
+                kmLimitExceeded: true
+                vehicleStatus: IN_MAINTENANCE
+                maintenanceAlerts:
+                  - id: 8a7b0000-0000-4000-8000-0000000000d1
+                    vehicleId: 0b6f1c2a-0000-4000-8000-000000000102
+                    plate: 06 FS 102
+                    ruleCode: OIL_CHANGE
+                    level: DUE
+                    status: OPEN
+                    message: 10,000 km service is due (60,000 km). The vehicle has been moved to maintenance.
+                    odometerKmAtAlert: 60020
+                    createdAt: '2026-11-13T18:40:01+03:00'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/InvalidReservationState' }
+        '422':
+          description: Return mileage is lower than pickup mileage, or the checklist is incomplete
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+              example:
+                type: https://fleetsync.local/problems/odometer-decreased
+                title: Invalid mileage
+                status: 422
+                code: ODOMETER_DECREASED
+                detail: The return mileage (59,300 km) cannot be lower than the pickup mileage (59,450 km).
+
+  /damage-reports:
+    post:
+      operationId: createDamageReport
+      tags: [handover]
+      summary: Report damage outside a handover
+      description: SEVERE damage sets the vehicle to OUT_OF_SERVICE and notifies the owners of its upcoming reservations.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/NewDamageReport' }
+      responses:
+        '201':
+          description: Damage report
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DamageReport' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /vehicles/{vehicleId}/damage-reports:
+    parameters:
+      - $ref: '#/components/parameters/VehicleId'
+    get:
+      operationId: listDamageReports
+      tags: [handover]
+      summary: List a vehicle's damage history
+      responses:
+        '200':
+          description: Damage reports, newest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/DamageReport' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  # ---------------------------------------------------------------- maintenance
+  /maintenance/rules:
+    get:
+      operationId: listMaintenanceRules
+      tags: [maintenance]
+      summary: List maintenance rules
+      responses:
+        '200':
+          description: Rules
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/MaintenanceRule' }
+              example:
+                - { id: 1d000000-0000-4000-8000-000000000001, code: OIL_CHANGE, name: Periodic oil service, intervalKm: 10000, intervalMonths: 12, warnKm: 1000, warnDays: 30, active: true }
+                - { id: 1d000000-0000-4000-8000-000000000002, code: TIRE_LIFE, name: Tyre life, intervalKm: 40000, intervalMonths: 48, warnKm: 2000, warnDays: 60, active: true }
+                - { id: 1d000000-0000-4000-8000-000000000003, code: INSPECTION, name: Periodic vehicle inspection, intervalKm: null, intervalMonths: 24, warnKm: null, warnDays: 30, active: true }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /maintenance/rules/{ruleId}:
+    parameters:
+      - name: ruleId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    put:
+      operationId: updateMaintenanceRule
+      tags: [maintenance]
+      summary: Update a maintenance rule's intervals
+      description: 'Requires role: FLEET_MANAGER. All vehicles are re-evaluated after the update.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MaintenanceRuleUpdate' }
+      responses:
+        '200':
+          description: Updated rule
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MaintenanceRule' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /vehicles/{vehicleId}/maintenance-status:
+    parameters:
+      - $ref: '#/components/parameters/VehicleId'
+    get:
+      operationId: getMaintenanceStatus
+      tags: [maintenance]
+      summary: Return remaining km / days and status for every maintenance rule of a vehicle
+      responses:
+        '200':
+          description: Rule evaluations
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/VehicleMaintenanceStatus' }
+              example:
+                vehicleId: 0b6f1c2a-0000-4000-8000-000000000101
+                plate: 06 FS 101
+                odometerKm: 39900
+                overallStatus: DUE_SOON
+                evaluations:
+                  - ruleCode: OIL_CHANGE
+                    ruleName: Periodic oil service
+                    lastServiceKm: 30000
+                    lastServiceDate: '2026-03-02'
+                    nextDueKm: 40000
+                    nextDueDate: '2027-03-02'
+                    remainingKm: 100
+                    remainingDays: 120
+                    status: DUE_SOON
+                  - ruleCode: INSPECTION
+                    ruleName: Periodic vehicle inspection
+                    lastServiceKm: null
+                    lastServiceDate: '2025-06-15'
+                    nextDueKm: null
+                    nextDueDate: '2027-06-15'
+                    remainingKm: null
+                    remainingDays: 225
+                    status: OK
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /vehicles/{vehicleId}/maintenance-records:
+    parameters:
+      - $ref: '#/components/parameters/VehicleId'
+    get:
+      operationId: listMaintenanceRecords
+      tags: [maintenance]
+      summary: List a vehicle's maintenance history
+      responses:
+        '200':
+          description: Maintenance records, newest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/MaintenanceRecord' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /maintenance/alerts:
+    get:
+      operationId: listMaintenanceAlerts
+      tags: [maintenance]
+      summary: List maintenance alerts
+      parameters:
+        - name: status
+          in: query
+          schema: { $ref: '#/components/schemas/AlertStatus' }
+        - name: level
+          in: query
+          schema: { $ref: '#/components/schemas/AlertLevel' }
+        - $ref: '#/components/parameters/VehicleIdQuery'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: Alerts, newest first
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MaintenanceAlertPage' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /maintenance/calendar:
+    get:
+      operationId: getMaintenanceCalendar
+      tags: [maintenance]
+      summary: Return expected maintenance in a date range for the calendar view
+      description: For mileage-based rules the expected date is estimated from the vehicle's average daily mileage over the last 30 days.
+      parameters:
+        - $ref: '#/components/parameters/FromDate'
+        - $ref: '#/components/parameters/ToDate'
+      responses:
+        '200':
+          description: Calendar entries, sorted by date
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/CalendarEntry' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /maintenance/records:
+    post:
+      operationId: createMaintenanceRecord
+      tags: [maintenance]
+      summary: Record completed maintenance, resolve related alerts and release the vehicle
+      description: |
+        Requires role: MAINTENANCE_OFFICER. The plans of the listed rules are reset (last service km / date),
+        and open alerts for those rules become RESOLVED. If no rule of the vehicle is still DUE, the vehicle becomes AVAILABLE.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/NewMaintenanceRecord' }
+            example:
+              vehicleId: 0b6f1c2a-0000-4000-8000-000000000102
+              ruleCodes: [OIL_CHANGE]
+              odometerKm: 60025
+              performedAt: '2026-11-14'
+              cost: 4850.00
+              workshop: Campus maintenance workshop
+              notes: Oil and oil filter replaced.
+      responses:
+        '201':
+          description: Maintenance record
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MaintenanceRecord' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422':
+          description: Mileage is lower than the vehicle's recorded mileage
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+              example:
+                type: https://fleetsync.local/problems/odometer-decreased
+                title: Invalid mileage
+                status: 422
+                code: ODOMETER_DECREASED
+                detail: The maintenance mileage (59,000 km) cannot be lower than the vehicle's recorded mileage (60,020 km).
+
+  # ---------------------------------------------------------------- fuel
+  /fuel-receipts:
+    post:
+      operationId: createFuelReceipt
+      tags: [fuel]
+      summary: Record a fuel receipt and check for consumption anomalies
+      description: |
+        For full-tank receipts, L/100 km is calculated against the previous full tank. Consumption more than 25% above
+        the vehicle's average produces a `CONSUMPTION_SPIKE` anomaly; a receipt outside any reservation produces
+        `OUTSIDE_RESERVATION`. The receipt is saved in both cases.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/NewFuelReceipt' }
+            example:
+              vehicleId: 0b6f1c2a-0000-4000-8000-000000000102
+              reservationId: 3f6a0000-0000-4000-8000-0000000000a1
+              liters: 48.5
+              totalPrice: 2134.00
+              odometerKm: 59880
+              fullTank: true
+              station: Konya ring road
+              filledAt: '2026-11-13T12:10:00+03:00'
+      responses:
+        '201':
+          description: Saved receipt, with anomaly details if any
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FuelReceipt' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422':
+          description: The receipt is physically impossible
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+              examples:
+                tank:
+                  summary: Litres exceed tank capacity
+                  value:
+                    type: https://fleetsync.local/problems/fuel-exceeds-tank
+                    title: Litres exceed tank capacity
+                    status: 422
+                    code: FUEL_EXCEEDS_TANK
+                    detail: The tank of 06 FS 102 holds 90 L; the receipt shows 120 L.
+                odometer:
+                  summary: Mileage goes backwards
+                  value:
+                    type: https://fleetsync.local/problems/odometer-decreased
+                    title: Invalid mileage
+                    status: 422
+                    code: ODOMETER_DECREASED
+                    detail: The receipt mileage (58,000 km) is lower than the previous receipt (59,100 km).
+
+  /vehicles/{vehicleId}/fuel-receipts:
+    parameters:
+      - $ref: '#/components/parameters/VehicleId'
+    get:
+      operationId: listFuelReceipts
+      tags: [fuel]
+      summary: List a vehicle's fuel receipts
+      parameters:
+        - $ref: '#/components/parameters/FromDateOptional'
+        - $ref: '#/components/parameters/ToDateOptional'
+      responses:
+        '200':
+          description: Receipts, newest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/FuelReceipt' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /vehicles/{vehicleId}/consumption:
+    parameters:
+      - $ref: '#/components/parameters/VehicleId'
+    get:
+      operationId: getFuelConsumption
+      tags: [fuel]
+      summary: Return a vehicle's consumption summary between full tanks
+      parameters:
+        - $ref: '#/components/parameters/FromDateOptional'
+        - $ref: '#/components/parameters/ToDateOptional'
+      responses:
+        '200':
+          description: Consumption summary
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ConsumptionSummary' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /fuel/anomalies:
+    get:
+      operationId: listFuelAnomalies
+      tags: [fuel]
+      summary: List fuel anomalies
+      description: 'Requires role: FLEET_MANAGER.'
+      parameters:
+        - $ref: '#/components/parameters/VehicleIdQuery'
+        - $ref: '#/components/parameters/FromDateOptional'
+        - $ref: '#/components/parameters/ToDateOptional'
+      responses:
+        '200':
+          description: Anomalies, newest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/FuelAnomaly' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /expenses:
+    get:
+      operationId: listExpenses
+      tags: [fuel]
+      summary: List non-fuel expenses
+      parameters:
+        - $ref: '#/components/parameters/VehicleIdQuery'
+        - name: category
+          in: query
+          schema: { $ref: '#/components/schemas/ExpenseCategory' }
+        - $ref: '#/components/parameters/FromDateOptional'
+        - $ref: '#/components/parameters/ToDateOptional'
+      responses:
+        '200':
+          description: Expenses
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Expense' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      operationId: createExpense
+      tags: [fuel]
+      summary: Record an expense such as tolls, parking or a car wash
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/NewExpense' }
+      responses:
+        '201':
+          description: Expense record
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Expense' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  # ---------------------------------------------------------------- reports
+  /reports/summary:
+    get:
+      operationId: getFleetSummary
+      tags: [reports]
+      summary: Return fleet summary indicators (report page header)
+      description: 'Requires role: FLEET_MANAGER.'
+      parameters:
+        - $ref: '#/components/parameters/FromDate'
+        - $ref: '#/components/parameters/ToDate'
+      responses:
+        '200':
+          description: Summary
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FleetSummary' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /reports/cost:
+    get:
+      operationId: getCostReport
+      tags: [reports]
+      summary: Fuel, expense and maintenance cost per vehicle
+      description: 'Requires role: FLEET_MANAGER. Returns CSV with `Accept: text/csv`.'
+      parameters:
+        - $ref: '#/components/parameters/FromDate'
+        - $ref: '#/components/parameters/ToDate'
+        - $ref: '#/components/parameters/VehicleIdQuery'
+      responses:
+        '200':
+          description: Cost report
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CostReport' }
+            text/csv:
+              schema: { type: string }
+              example: |
+                plate,km,fuelCost,expenseCost,maintenanceCost,totalCost,costPerKm
+                06 FS 102,570,2134.00,310.00,4850.00,7294.00,12.80
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /reports/carbon:
+    get:
+      operationId: getCarbonReport
+      tags: [reports]
+      summary: Carbon footprint per vehicle and ride-sharing savings
+      description: 'Requires role: FLEET_MANAGER. kg CO2 = litres × emission factor (gasoline 2.31, diesel 2.68).'
+      parameters:
+        - $ref: '#/components/parameters/FromDate'
+        - $ref: '#/components/parameters/ToDate'
+        - $ref: '#/components/parameters/VehicleIdQuery'
+      responses:
+        '200':
+          description: Carbon report
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CarbonReport' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /reports/utilization:
+    get:
+      operationId: getUtilizationReport
+      tags: [reports]
+      summary: Utilisation rate per vehicle
+      description: 'Requires role: FLEET_MANAGER. Utilisation = reserved hours / available working hours (maintenance and out-of-service time excluded).'
+      parameters:
+        - $ref: '#/components/parameters/FromDate'
+        - $ref: '#/components/parameters/ToDate'
+        - $ref: '#/components/parameters/VehicleIdQuery'
+      responses:
+        '200':
+          description: Utilisation report
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UtilizationReport' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    Page:
+      name: page
+      in: query
+      description: Zero-based page number
+      schema: { type: integer, minimum: 0, default: 0 }
+    Size:
+      name: size
+      in: query
+      description: Page size
+      schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+    VehicleId:
+      name: vehicleId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    VehicleIdQuery:
+      name: vehicleId
+      in: query
+      description: Limit results to this vehicle
+      schema: { type: string, format: uuid }
+    ReservationId:
+      name: reservationId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    DriverId:
+      name: driverId
+      in: path
+      required: true
+      description: The driver's user id
+      schema: { type: string, format: uuid }
+    FromDate:
+      name: from
+      in: query
+      required: true
+      description: Start date (inclusive)
+      schema: { type: string, format: date }
+      example: '2026-11-01'
+    ToDate:
+      name: to
+      in: query
+      required: true
+      description: End date (inclusive)
+      schema: { type: string, format: date }
+      example: '2026-11-30'
+    FromDateOptional:
+      name: from
+      in: query
+      schema: { type: string, format: date }
+    ToDateOptional:
+      name: to
+      in: query
+      schema: { type: string, format: date }
+
+  responses:
+    BadRequest:
+      description: Request fields are invalid
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+          example:
+            type: https://fleetsync.local/problems/validation-error
+            title: Invalid request
+            status: 400
+            code: VALIDATION_ERROR
+            detail: 2 fields are invalid.
+            errors:
+              - field: endAt
+                message: endAt must be after startAt.
+              - field: estimatedKm
+                message: Must be between 1 and 5000.
+    Unauthorized:
+      description: Token missing, invalid or expired
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+          example:
+            type: https://fleetsync.local/problems/unauthorized
+            title: Authentication required
+            status: 401
+            code: UNAUTHORIZED
+            detail: No valid access token was sent.
+    Forbidden:
+      description: The user's role does not allow this operation
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+          example:
+            type: https://fleetsync.local/problems/forbidden
+            title: Not allowed
+            status: 403
+            code: FORBIDDEN
+            detail: This operation requires the FLEET_MANAGER role.
+    NotFound:
+      description: Record not found
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+          example:
+            type: https://fleetsync.local/problems/not-found
+            title: Not found
+            status: 404
+            code: NOT_FOUND
+            detail: No vehicle with id 0b6f1c2a-0000-4000-8000-000000000999.
+    InvalidReservationState:
+      description: The reservation is not in a state that allows this operation
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+          example:
+            type: https://fleetsync.local/problems/invalid-reservation-state
+            title: Invalid reservation state
+            status: 409
+            code: INVALID_RESERVATION_STATE
+            detail: The reservation must be ACTIVE to be returned; its current status is CONFIRMED.
+
+  schemas:
+    # ------------------------------------------------ common
+    Problem:
+      type: object
+      description: RFC 9457 error body; `code` is meant for machines.
+      required: [type, title, status, code]
+      properties:
+        type: { type: string, format: uri }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }
+        code: { $ref: '#/components/schemas/ErrorCode' }
+        errors:
+          type: array
+          description: Field-level validation errors (400 only)
+          items: { $ref: '#/components/schemas/FieldError' }
+        suggestedVehicleIds:
+          type: array
+          description: Alternative vehicles suggested with VEHICLE_MAINTENANCE_DUE and RESERVATION_CONFLICT
+          items: { type: string, format: uuid }
+    FieldError:
+      type: object
+      required: [field, message]
+      properties:
+        field: { type: string }
+        message: { type: string }
+    ErrorCode:
+      type: string
+      enum:
+        - VALIDATION_ERROR
+        - INVALID_CREDENTIALS
+        - UNAUTHORIZED
+        - FORBIDDEN
+        - NOT_FOUND
+        - DUPLICATE_EMAIL
+        - DUPLICATE_LICENSE
+        - DUPLICATE_PLATE
+        - INVALID_STATUS_TRANSITION
+        - RESERVATION_CONFLICT
+        - VEHICLE_MAINTENANCE_DUE
+        - VEHICLE_UNAVAILABLE
+        - LICENSE_EXPIRED
+        - LICENSE_CLASS_MISMATCH
+        - SEAT_CAPACITY_EXCEEDED
+        - RESERVATION_NOT_CANCELLABLE
+        - INVALID_RESERVATION_STATE
+        - ALREADY_JOINED
+        - ODOMETER_DECREASED
+        - CHECKLIST_INCOMPLETE
+        - FUEL_EXCEEDS_TANK
+    PageMeta:
+      type: object
+      required: [page, size, totalElements, totalPages]
+      properties:
+        page: { type: integer, minimum: 0 }
+        size: { type: integer, minimum: 1 }
+        totalElements: { type: integer, minimum: 0 }
+        totalPages: { type: integer, minimum: 0 }
+    Reason:
+      type: object
+      description: Human-readable reason behind an eligibility decision
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          enum: [MAINTENANCE_DUE, MAINTENANCE_DUE_SOON, INSUFFICIENT_SEATS, CALENDAR_CONFLICT, LICENSE_EXPIRED, LICENSE_CLASS_MISMATCH, VEHICLE_NOT_AVAILABLE]
+        message: { type: string }
+
+    # ------------------------------------------------ identity
+    Role:
+      type: string
+      enum: [STAFF, FLEET_MANAGER, MAINTENANCE_OFFICER]
+    LicenseClass:
+      type: string
+      description: Turkish driving licence classes used in the fleet
+      enum: [B, BE, C1, C, D1, D]
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, minLength: 8, writeOnly: true }
+    TokenResponse:
+      type: object
+      required: [accessToken, tokenType, expiresIn, user]
+      properties:
+        accessToken: { type: string, examples: [eyJhbGciOiJIUzI1NiJ9.demo.signature] }
+        tokenType: { type: string, const: Bearer }
+        expiresIn: { type: integer, description: Seconds, examples: [3600] }
+        user: { $ref: '#/components/schemas/User' }
+    User:
+      type: object
+      required: [id, email, fullName, role]
+      properties:
+        id: { type: string, format: uuid, examples: [5a8c3e10-0000-4000-8000-000000000001] }
+        email: { type: string, format: email, examples: [elif.demir@campus.edu.tr] }
+        fullName: { type: string, examples: [Elif Demir] }
+        role: { $ref: '#/components/schemas/Role' }
+        department: { type: string, examples: [Computer Engineering] }
+    UserSummary:
+      type: object
+      required: [id, fullName]
+      properties:
+        id: { type: string, format: uuid }
+        fullName: { type: string }
+    UserPage:
+      type: object
+      required: [content, page]
+      properties:
+        content:
+          type: array
+          items: { $ref: '#/components/schemas/User' }
+        page: { $ref: '#/components/schemas/PageMeta' }
+    NewUser:
+      type: object
+      required: [email, fullName, role, password]
+      properties:
+        email: { type: string, format: email }
+        fullName: { type: string, minLength: 2, maxLength: 100 }
+        role: { $ref: '#/components/schemas/Role' }
+        department: { type: string, maxLength: 100 }
+        password: { type: string, minLength: 8, writeOnly: true }
+    DriverProfile:
+      type: object
+      required: [userId, fullName, licenses, canDrive]
+      properties:
+        userId: { type: string, format: uuid }
+        fullName: { type: string }
+        phone: { type: string, examples: ['+90 555 000 00 00'] }
+        employeeNo: { type: string, examples: [P-10423] }
+        canDrive:
+          type: boolean
+          description: Whether the driver has at least one verified, valid licence
+        licenses:
+          type: array
+          items: { $ref: '#/components/schemas/License' }
+    DriverProfileUpdate:
+      type: object
+      properties:
+        phone: { type: string, maxLength: 20 }
+        employeeNo: { type: string, maxLength: 20 }
+    License:
+      type: object
+      required: [id, licenseClass, issuedAt, expiresAt, verified]
+      properties:
+        id: { type: string, format: uuid }
+        licenseClass: { $ref: '#/components/schemas/LicenseClass' }
+        licenseNumber: { type: string }
+        issuedAt: { type: string, format: date }
+        expiresAt: { type: string, format: date }
+        verified: { type: boolean, description: Whether a FLEET_MANAGER has verified the document }
+    NewLicense:
+      type: object
+      required: [licenseClass, licenseNumber, issuedAt, expiresAt]
+      properties:
+        licenseClass: { $ref: '#/components/schemas/LicenseClass' }
+        licenseNumber: { type: string, minLength: 3, maxLength: 20 }
+        issuedAt: { type: string, format: date }
+        expiresAt: { type: string, format: date }
+    DriverEligibility:
+      type: object
+      required: [driverId, vehicleId, eligible, reasons]
+      properties:
+        driverId: { type: string, format: uuid }
+        vehicleId: { type: string, format: uuid }
+        eligible: { type: boolean }
+        reasons:
+          type: array
+          items: { $ref: '#/components/schemas/Reason' }
+
+    # ------------------------------------------------ locations
+    Location:
+      type: object
+      required: [id, name, city, distanceKmFromBase]
+      properties:
+        id: { type: string, format: uuid, examples: [9c2b0000-0000-4000-8000-00000000c042] }
+        name: { type: string, examples: [Konya Campus] }
+        city: { type: string, examples: [Konya] }
+        distanceKmFromBase:
+          type: integer
+          description: One-way road distance from the main campus
+          examples: [200]
+
+    # ------------------------------------------------ vehicles
+    VehicleType:
+      type: string
+      enum: [SEDAN, HATCHBACK, SUV, MINIBUS, VAN, PICKUP]
+    FuelType:
+      type: string
+      enum: [GASOLINE, DIESEL, HYBRID, ELECTRIC]
+    VehicleStatus:
+      type: string
+      enum: [AVAILABLE, IN_USE, IN_MAINTENANCE, OUT_OF_SERVICE]
+    Plate:
+      type: string
+      description: 'Turkish plate format: province code, letter group, number group, separated by spaces'
+      pattern: '^(0[1-9]|[1-7][0-9]|8[01]) [A-Z]{1,3} [0-9]{2,4}$'
+      examples: [06 FS 102]
+    VehicleSummary:
+      type: object
+      required: [id, plate, type, seatCount, odometerKm, status]
+      properties:
+        id: { type: string, format: uuid }
+        plate: { $ref: '#/components/schemas/Plate' }
+        type: { $ref: '#/components/schemas/VehicleType' }
+        seatCount: { type: integer }
+        odometerKm: { type: integer }
+        status: { $ref: '#/components/schemas/VehicleStatus' }
+    Vehicle:
+      type: object
+      required: [id, plate, type, seatCount, fuelType, tankCapacityLiters, requiredLicenseClass, odometerKm, status, maintenance]
+      properties:
+        id: { type: string, format: uuid, examples: [0b6f1c2a-0000-4000-8000-000000000102] }
+        plate: { $ref: '#/components/schemas/Plate' }
+        brandModel: { type: string, examples: [Minibus 8+1] }
+        type: { $ref: '#/components/schemas/VehicleType' }
+        seatCount: { type: integer, minimum: 1, examples: [9] }
+        fuelType: { $ref: '#/components/schemas/FuelType' }
+        tankCapacityLiters: { type: number, examples: [90] }
+        requiredLicenseClass: { $ref: '#/components/schemas/LicenseClass' }
+        odometerKm: { type: integer, minimum: 0, examples: [59450] }
+        modelYear: { type: integer, examples: [2022] }
+        status: { $ref: '#/components/schemas/VehicleStatus' }
+        maintenance: { $ref: '#/components/schemas/MaintenanceSummary' }
+    MaintenanceSummary:
+      type: object
+      description: The most critical rule, shown as the maintenance bar on the vehicle status card
+      required: [overallStatus]
+      properties:
+        overallStatus: { $ref: '#/components/schemas/EvaluationStatus' }
+        nextRuleCode: { type: string, examples: [OIL_CHANGE] }
+        remainingKm: { type: [integer, 'null'], examples: [550] }
+        remainingDays: { type: [integer, 'null'], examples: [140] }
+    VehiclePage:
+      type: object
+      required: [content, page]
+      properties:
+        content:
+          type: array
+          items: { $ref: '#/components/schemas/Vehicle' }
+        page: { $ref: '#/components/schemas/PageMeta' }
+    NewVehicle:
+      type: object
+      required: [plate, type, seatCount, fuelType, tankCapacityLiters, requiredLicenseClass, odometerKm]
+      properties:
+        plate: { $ref: '#/components/schemas/Plate' }
+        brandModel: { type: string, maxLength: 80 }
+        type: { $ref: '#/components/schemas/VehicleType' }
+        seatCount: { type: integer, minimum: 1, maximum: 60 }
+        fuelType: { $ref: '#/components/schemas/FuelType' }
+        tankCapacityLiters: { type: number, exclusiveMinimum: 0, maximum: 300 }
+        requiredLicenseClass: { $ref: '#/components/schemas/LicenseClass' }
+        odometerKm: { type: integer, minimum: 0 }
+        modelYear: { type: integer, minimum: 1990, maximum: 2030 }
+    VehicleUpdate:
+      type: object
+      properties:
+        brandModel: { type: string, maxLength: 80 }
+        seatCount: { type: integer, minimum: 1, maximum: 60 }
+        tankCapacityLiters: { type: number, exclusiveMinimum: 0, maximum: 300 }
+        requiredLicenseClass: { $ref: '#/components/schemas/LicenseClass' }
+        modelYear: { type: integer, minimum: 1990, maximum: 2030 }
+    VehicleStatusChange:
+      type: object
+      required: [status, reason]
+      properties:
+        status: { $ref: '#/components/schemas/VehicleStatus' }
+        reason: { type: string, minLength: 3, maxLength: 300, examples: ['Cracked windscreen, going for replacement'] }
+
+    # ------------------------------------------------ reservations
+    ReservationStatus:
+      type: string
+      description: 'CONFIRMED: approved, ACTIVE: vehicle picked up, COMPLETED: vehicle returned, CANCELLED: cancelled'
+      enum: [CONFIRMED, ACTIVE, COMPLETED, CANCELLED]
+    RecommendationResult:
+      type: object
+      required: [query, recommended, blocked]
+      properties:
+        query:
+          type: object
+          required: [startAt, endAt, seats, estimatedKm]
+          properties:
+            startAt: { type: string, format: date-time }
+            endAt: { type: string, format: date-time }
+            seats: { type: integer }
+            estimatedKm: { type: integer }
+            destinationId: { type: string, format: uuid }
+        recommended:
+          type: array
+          description: Suitable vehicles, highest score first
+          items: { $ref: '#/components/schemas/VehicleOption' }
+        blocked:
+          type: array
+          description: Unsuitable vehicles and the reasons
+          items: { $ref: '#/components/schemas/BlockedVehicle' }
+    VehicleOption:
+      type: object
+      required: [vehicle, score, warnings]
+      properties:
+        vehicle: { $ref: '#/components/schemas/VehicleSummary' }
+        score: { type: number, minimum: 0, maximum: 1 }
+        warnings:
+          type: array
+          items: { $ref: '#/components/schemas/Reason' }
+    BlockedVehicle:
+      type: object
+      required: [vehicle, reasons]
+      properties:
+        vehicle: { $ref: '#/components/schemas/VehicleSummary' }
+        reasons:
+          type: array
+          minItems: 1
+          items: { $ref: '#/components/schemas/Reason' }
+    NewReservation:
+      type: object
+      required: [vehicleId, destinationId, purpose, startAt, endAt, estimatedKm, seatsNeeded]
+      properties:
+        vehicleId: { type: string, format: uuid }
+        destinationId: { type: string, format: uuid }
+        purpose: { type: string, minLength: 3, maxLength: 200 }
+        startAt: { type: string, format: date-time }
+        endAt: { type: string, format: date-time, description: Must be after startAt; at most 14 days later }
+        estimatedKm: { type: integer, minimum: 1, maximum: 5000 }
+        seatsNeeded: { type: integer, minimum: 1, maximum: 60, description: Driver included }
+        allowRideSharing:
+          type: boolean
+          default: true
+          description: Whether free seats are offered to ride-sharing matches
+    Reservation:
+      type: object
+      required: [id, vehicle, requester, destination, purpose, startAt, endAt, estimatedKm, seatsNeeded, seatsAvailable, allowRideSharing, status, passengers, createdAt]
+      properties:
+        id: { type: string, format: uuid, examples: [3f6a0000-0000-4000-8000-0000000000a1] }
+        vehicle: { $ref: '#/components/schemas/VehicleSummary' }
+        requester: { $ref: '#/components/schemas/UserSummary' }
+        destination: { $ref: '#/components/schemas/Location' }
+        purpose: { type: string }
+        startAt: { type: string, format: date-time }
+        endAt: { type: string, format: date-time }
+        estimatedKm: { type: integer }
+        seatsNeeded: { type: integer }
+        seatsAvailable: { type: integer, description: Free seats left for ride sharing }
+        allowRideSharing: { type: boolean }
+        status: { $ref: '#/components/schemas/ReservationStatus' }
+        passengers:
+          type: array
+          items: { $ref: '#/components/schemas/Passenger' }
+        pickupOdometerKm: { type: [integer, 'null'] }
+        returnOdometerKm: { type: [integer, 'null'] }
+        createdAt: { type: string, format: date-time }
+        cancelReason: { type: [string, 'null'] }
+    ReservationPage:
+      type: object
+      required: [content, page]
+      properties:
+        content:
+          type: array
+          items: { $ref: '#/components/schemas/Reservation' }
+        page: { $ref: '#/components/schemas/PageMeta' }
+    CancelRequest:
+      type: object
+      properties:
+        reason: { type: string, maxLength: 300 }
+
+    # ------------------------------------------------ carpool
+    Passenger:
+      type: object
+      required: [userId, fullName, joinedAt]
+      properties:
+        userId: { type: string, format: uuid }
+        fullName: { type: string }
+        joinedAt: { type: string, format: date-time }
+    RideMatch:
+      type: object
+      required: [reservationId, vehicle, driver, destination, startAt, endAt, seatsAvailable, departureDiffMinutes]
+      properties:
+        reservationId: { type: string, format: uuid }
+        vehicle: { $ref: '#/components/schemas/VehicleSummary' }
+        driver: { $ref: '#/components/schemas/UserSummary' }
+        destination: { $ref: '#/components/schemas/Location' }
+        startAt: { type: string, format: date-time }
+        endAt: { type: string, format: date-time }
+        seatsAvailable: { type: integer, minimum: 1 }
+        departureDiffMinutes:
+          type: integer
+          description: Absolute difference between the requested departure and this ride's departure
+
+    # ------------------------------------------------ handover
+    HandoverType:
+      type: string
+      enum: [PICKUP, RETURN]
+    ChecklistTemplate:
+      type: object
+      required: [type, items]
+      properties:
+        type: { $ref: '#/components/schemas/HandoverType' }
+        items:
+          type: array
+          items:
+            type: object
+            required: [code, label, required]
+            properties:
+              code: { type: string, examples: [TIRES] }
+              label: { type: string, examples: [Tyres and tyre pressure] }
+              required: { type: boolean }
+    ChecklistItemResult:
+      type: object
+      required: [code, ok]
+      properties:
+        code: { type: string }
+        ok: { type: boolean }
+        note: { type: string, maxLength: 300 }
+    PickupRequest:
+      type: object
+      required: [odometerKm, fuelLevelPercent, items]
+      properties:
+        odometerKm: { type: integer, minimum: 0 }
+        fuelLevelPercent: { type: integer, minimum: 0, maximum: 100 }
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/ChecklistItemResult' }
+        notes: { type: string, maxLength: 500 }
+    ReturnRequest:
+      type: object
+      required: [odometerKm, fuelLevelPercent, items]
+      properties:
+        odometerKm: { type: integer, minimum: 0 }
+        fuelLevelPercent: { type: integer, minimum: 0, maximum: 100 }
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/ChecklistItemResult' }
+        damages:
+          type: array
+          items: { $ref: '#/components/schemas/NewDamage' }
+        notes: { type: string, maxLength: 500 }
+    HandoverRecord:
+      type: object
+      required: [id, reservationId, type, odometerKm, fuelLevelPercent, items, recordedBy, recordedAt]
+      properties:
+        id: { type: string, format: uuid }
+        reservationId: { type: string, format: uuid }
+        type: { $ref: '#/components/schemas/HandoverType' }
+        odometerKm: { type: integer }
+        fuelLevelPercent: { type: integer }
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/ChecklistItemResult' }
+        notes: { type: string }
+        recordedBy: { $ref: '#/components/schemas/UserSummary' }
+        recordedAt: { type: string, format: date-time }
+    ReturnResult:
+      type: object
+      required: [handover, tripKm, kmLimitExceeded, vehicleStatus, maintenanceAlerts]
+      properties:
+        handover: { $ref: '#/components/schemas/HandoverRecord' }
+        tripKm: { type: integer, description: Return mileage minus pickup mileage }
+        kmLimitExceeded: { type: boolean, description: 'tripKm > estimatedKm × 1.3' }
+        vehicleStatus: { $ref: '#/components/schemas/VehicleStatus' }
+        maintenanceAlerts:
+          type: array
+          description: Alerts the rule engine generated during this return
+          items: { $ref: '#/components/schemas/MaintenanceAlert' }
+    DamageSeverity:
+      type: string
+      enum: [MINOR, MODERATE, SEVERE]
+    NewDamage:
+      type: object
+      required: [area, severity, description]
+      properties:
+        area:
+          type: string
+          enum: [FRONT, REAR, LEFT, RIGHT, ROOF, INTERIOR, WINDSHIELD, TIRES, OTHER]
+        severity: { $ref: '#/components/schemas/DamageSeverity' }
+        description: { type: string, minLength: 3, maxLength: 500 }
+        photoUrl: { type: string, format: uri }
+    NewDamageReport:
+      allOf:
+        - $ref: '#/components/schemas/NewDamage'
+        - type: object
+          required: [vehicleId]
+          properties:
+            vehicleId: { type: string, format: uuid }
+            reservationId: { type: string, format: uuid }
+    DamageReport:
+      allOf:
+        - $ref: '#/components/schemas/NewDamage'
+        - type: object
+          required: [id, vehicleId, reportedBy, reportedAt]
+          properties:
+            id: { type: string, format: uuid }
+            vehicleId: { type: string, format: uuid }
+            reservationId: { type: [string, 'null'], format: uuid }
+            reportedBy: { $ref: '#/components/schemas/UserSummary' }
+            reportedAt: { type: string, format: date-time }
+
+    # ------------------------------------------------ maintenance
+    EvaluationStatus:
+      type: string
+      description: 'OK: threshold far away, DUE_SOON: within the warning threshold, DUE: service is due or overdue'
+      enum: [OK, DUE_SOON, DUE]
+    AlertLevel:
+      type: string
+      enum: [DUE_SOON, DUE]
+    AlertStatus:
+      type: string
+      enum: [OPEN, RESOLVED]
+    MaintenanceRule:
+      type: object
+      description: At least one of intervalKm or intervalMonths must be set
+      required: [id, code, name, active]
+      properties:
+        id: { type: string, format: uuid }
+        code: { type: string, pattern: '^[A-Z_]+$', examples: [OIL_CHANGE] }
+        name: { type: string, examples: [Periodic oil service] }
+        intervalKm: { type: [integer, 'null'], minimum: 1 }
+        intervalMonths: { type: [integer, 'null'], minimum: 1 }
+        warnKm: { type: [integer, 'null'], minimum: 0 }
+        warnDays: { type: [integer, 'null'], minimum: 0 }
+        active: { type: boolean }
+    MaintenanceRuleUpdate:
+      type: object
+      properties:
+        intervalKm: { type: [integer, 'null'], minimum: 1 }
+        intervalMonths: { type: [integer, 'null'], minimum: 1 }
+        warnKm: { type: [integer, 'null'], minimum: 0 }
+        warnDays: { type: [integer, 'null'], minimum: 0 }
+        active: { type: boolean }
+    RuleEvaluation:
+      type: object
+      required: [ruleCode, ruleName, status]
+      properties:
+        ruleCode: { type: string }
+        ruleName: { type: string }
+        lastServiceKm: { type: [integer, 'null'] }
+        lastServiceDate: { type: [string, 'null'], format: date }
+        nextDueKm: { type: [integer, 'null'] }
+        nextDueDate: { type: [string, 'null'], format: date }
+        remainingKm: { type: [integer, 'null'], description: Negative when the service is overdue }
+        remainingDays: { type: [integer, 'null'] }
+        status: { $ref: '#/components/schemas/EvaluationStatus' }
+    VehicleMaintenanceStatus:
+      type: object
+      required: [vehicleId, plate, odometerKm, overallStatus, evaluations]
+      properties:
+        vehicleId: { type: string, format: uuid }
+        plate: { $ref: '#/components/schemas/Plate' }
+        odometerKm: { type: integer }
+        overallStatus: { $ref: '#/components/schemas/EvaluationStatus' }
+        evaluations:
+          type: array
+          items: { $ref: '#/components/schemas/RuleEvaluation' }
+    MaintenanceAlert:
+      type: object
+      required: [id, vehicleId, plate, ruleCode, level, status, message, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        vehicleId: { type: string, format: uuid }
+        plate: { $ref: '#/components/schemas/Plate' }
+        ruleCode: { type: string }
+        level: { $ref: '#/components/schemas/AlertLevel' }
+        status: { $ref: '#/components/schemas/AlertStatus' }
+        message: { type: string }
+        odometerKmAtAlert: { type: [integer, 'null'] }
+        createdAt: { type: string, format: date-time }
+        resolvedAt: { type: [string, 'null'], format: date-time }
+    MaintenanceAlertPage:
+      type: object
+      required: [content, page]
+      properties:
+        content:
+          type: array
+          items: { $ref: '#/components/schemas/MaintenanceAlert' }
+        page: { $ref: '#/components/schemas/PageMeta' }
+    CalendarEntry:
+      type: object
+      required: [vehicleId, plate, ruleCode, expectedDate, status, estimated]
+      properties:
+        vehicleId: { type: string, format: uuid }
+        plate: { $ref: '#/components/schemas/Plate' }
+        ruleCode: { type: string }
+        expectedDate: { type: string, format: date }
+        expectedKm: { type: [integer, 'null'] }
+        estimated:
+          type: boolean
+          description: true when the date is estimated from a mileage-based rule
+        status: { $ref: '#/components/schemas/EvaluationStatus' }
+    NewMaintenanceRecord:
+      type: object
+      required: [vehicleId, ruleCodes, odometerKm, performedAt]
+      properties:
+        vehicleId: { type: string, format: uuid }
+        ruleCodes:
+          type: array
+          minItems: 1
+          items: { type: string }
+        odometerKm: { type: integer, minimum: 0 }
+        performedAt: { type: string, format: date }
+        cost: { type: number, minimum: 0 }
+        workshop: { type: string, maxLength: 120 }
+        notes: { type: string, maxLength: 1000 }
+    MaintenanceRecord:
+      type: object
+      required: [id, vehicleId, ruleCodes, odometerKm, performedAt, recordedBy, resolvedAlertIds, vehicleStatus]
+      properties:
+        id: { type: string, format: uuid }
+        vehicleId: { type: string, format: uuid }
+        ruleCodes:
+          type: array
+          items: { type: string }
+        odometerKm: { type: integer }
+        performedAt: { type: string, format: date }
+        cost: { type: [number, 'null'] }
+        workshop: { type: [string, 'null'] }
+        notes: { type: [string, 'null'] }
+        recordedBy: { $ref: '#/components/schemas/UserSummary' }
+        resolvedAlertIds:
+          type: array
+          items: { type: string, format: uuid }
+        vehicleStatus:
+          $ref: '#/components/schemas/VehicleStatus'
+
+    # ------------------------------------------------ fuel
+    NewFuelReceipt:
+      type: object
+      required: [vehicleId, liters, totalPrice, odometerKm, fullTank, filledAt]
+      properties:
+        vehicleId: { type: string, format: uuid }
+        reservationId: { type: string, format: uuid }
+        liters: { type: number, exclusiveMinimum: 0 }
+        totalPrice: { type: number, exclusiveMinimum: 0, description: TRY }
+        odometerKm: { type: integer, minimum: 0 }
+        fullTank: { type: boolean }
+        station: { type: string, maxLength: 120 }
+        filledAt: { type: string, format: date-time }
+    FuelReceipt:
+      type: object
+      required: [id, vehicleId, liters, totalPrice, unitPrice, odometerKm, fullTank, filledAt, recordedBy]
+      properties:
+        id: { type: string, format: uuid }
+        vehicleId: { type: string, format: uuid }
+        reservationId: { type: [string, 'null'], format: uuid }
+        liters: { type: number }
+        totalPrice: { type: number }
+        unitPrice: { type: number, description: TRY per litre }
+        odometerKm: { type: integer }
+        fullTank: { type: boolean }
+        station: { type: [string, 'null'] }
+        filledAt: { type: string, format: date-time }
+        recordedBy: { $ref: '#/components/schemas/UserSummary' }
+        anomaly:
+          oneOf:
+            - $ref: '#/components/schemas/FuelAnomaly'
+            - type: 'null'
+    FuelAnomalyType:
+      type: string
+      enum: [CONSUMPTION_SPIKE, OUTSIDE_RESERVATION]
+    FuelAnomaly:
+      type: object
+      required: [receiptId, vehicleId, plate, type, detectedAt]
+      properties:
+        receiptId: { type: string, format: uuid }
+        vehicleId: { type: string, format: uuid }
+        plate: { $ref: '#/components/schemas/Plate' }
+        type: { $ref: '#/components/schemas/FuelAnomalyType' }
+        measuredLPer100Km: { type: [number, 'null'], examples: [14.6] }
+        baselineLPer100Km: { type: [number, 'null'], examples: [10.8] }
+        deviationPercent: { type: [number, 'null'], examples: [35.2] }
+        detectedAt: { type: string, format: date-time }
+    ConsumptionSummary:
+      type: object
+      required: [vehicleId, totalLiters, totalKm, segments]
+      properties:
+        vehicleId: { type: string, format: uuid }
+        from: { type: [string, 'null'], format: date }
+        to: { type: [string, 'null'], format: date }
+        totalLiters: { type: number }
+        totalKm: { type: integer }
+        averageLPer100Km: { type: [number, 'null'] }
+        baselineLPer100Km: { type: [number, 'null'], description: The vehicle's all-time average }
+        segments:
+          type: array
+          description: Measurements between two consecutive full tanks
+          items:
+            type: object
+            required: [fromKm, toKm, liters, lPer100Km]
+            properties:
+              fromKm: { type: integer }
+              toKm: { type: integer }
+              liters: { type: number }
+              lPer100Km: { type: number }
+              anomalous: { type: boolean }
+    ExpenseCategory:
+      type: string
+      enum: [TOLL, PARKING, CAR_WASH, BRIDGE, OTHER]
+    NewExpense:
+      type: object
+      required: [vehicleId, category, amount, spentAt]
+      properties:
+        vehicleId: { type: string, format: uuid }
+        reservationId: { type: string, format: uuid }
+        category: { $ref: '#/components/schemas/ExpenseCategory' }
+        amount: { type: number, exclusiveMinimum: 0, description: TRY }
+        spentAt: { type: string, format: date-time }
+        description: { type: string, maxLength: 300 }
+    Expense:
+      allOf:
+        - $ref: '#/components/schemas/NewExpense'
+        - type: object
+          required: [id, recordedBy]
+          properties:
+            id: { type: string, format: uuid }
+            recordedBy: { $ref: '#/components/schemas/UserSummary' }
+
+    # ------------------------------------------------ reports
+    ReportPeriod:
+      type: object
+      required: [from, to]
+      properties:
+        from: { type: string, format: date }
+        to: { type: string, format: date }
+    FleetSummary:
+      type: object
+      required: [period, totalVehicles, vehiclesByStatus, activeReservations, openMaintenanceAlerts, totalCost, totalKgCo2, fleetUtilizationPercent, sharedRides, savedKm]
+      properties:
+        period: { $ref: '#/components/schemas/ReportPeriod' }
+        totalVehicles: { type: integer }
+        vehiclesByStatus:
+          type: object
+          required: [AVAILABLE, IN_USE, IN_MAINTENANCE, OUT_OF_SERVICE]
+          properties:
+            AVAILABLE: { type: integer }
+            IN_USE: { type: integer }
+            IN_MAINTENANCE: { type: integer }
+            OUT_OF_SERVICE: { type: integer }
+        activeReservations: { type: integer }
+        openMaintenanceAlerts: { type: integer }
+        totalCost: { type: number, description: TRY }
+        totalKgCo2: { type: number }
+        fleetUtilizationPercent: { type: number }
+        sharedRides: { type: integer, description: Reservations that at least one passenger joined }
+        savedKm:
+          type: integer
+          description: Total km of trips that did not need a separate vehicle thanks to ride sharing
+    CostReport:
+      type: object
+      required: [period, currency, totalCost, items]
+      properties:
+        period: { $ref: '#/components/schemas/ReportPeriod' }
+        currency: { type: string, const: TRY }
+        totalCost: { type: number }
+        items:
+          type: array
+          items:
+            type: object
+            required: [vehicleId, plate, km, fuelCost, expenseCost, maintenanceCost, totalCost]
+            properties:
+              vehicleId: { type: string, format: uuid }
+              plate: { $ref: '#/components/schemas/Plate' }
+              km: { type: integer }
+              fuelCost: { type: number }
+              expenseCost: { type: number }
+              maintenanceCost: { type: number }
+              totalCost: { type: number }
+              costPerKm: { type: [number, 'null'], description: null when km is 0 }
+    CarbonReport:
+      type: object
+      required: [period, totalKgCo2, emissionFactors, items]
+      properties:
+        period: { $ref: '#/components/schemas/ReportPeriod' }
+        totalKgCo2: { type: number }
+        emissionFactors:
+          type: object
+          description: kg CO2 per litre
+          properties:
+            GASOLINE: { type: number, examples: [2.31] }
+            DIESEL: { type: number, examples: [2.68] }
+        rideSharingSavedKgCo2:
+          type: number
+          description: Estimated emissions avoided through ride sharing
+        items:
+          type: array
+          items:
+            type: object
+            required: [vehicleId, plate, fuelType, liters, km, kgCo2]
+            properties:
+              vehicleId: { type: string, format: uuid }
+              plate: { $ref: '#/components/schemas/Plate' }
+              fuelType: { $ref: '#/components/schemas/FuelType' }
+              liters: { type: number }
+              km: { type: integer }
+              kgCo2: { type: number }
+              gCo2PerKm: { type: [number, 'null'] }
+    UtilizationReport:
+      type: object
+      required: [period, workingHoursPerDay, fleetUtilizationPercent, items]
+      properties:
+        period: { $ref: '#/components/schemas/ReportPeriod' }
+        workingHoursPerDay: { type: number, examples: [9] }
+        fleetUtilizationPercent: { type: number }
+        items:
+          type: array
+          items:
+            type: object
+            required: [vehicleId, plate, reservedHours, availableHours, utilizationPercent]
+            properties:
+              vehicleId: { type: string, format: uuid }
+              plate: { $ref: '#/components/schemas/Plate' }
+              reservedHours: { type: number }
+              availableHours: { type: number, description: Working hours excluding maintenance and out-of-service time }
+              utilizationPercent: { type: number, minimum: 0, maximum: 100 }
