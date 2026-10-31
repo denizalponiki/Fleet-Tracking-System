@@ -3,9 +3,10 @@
 | | |
 |---|---|
 | Course | SENG 321 Software Engineering · Sprint 1, deliverable 2 |
-| Responsible (R) | Ali Eren Kurt, Lead Software Architect |
-| Accountable (A) | Ahmet Can Vurmaz, Product Owner |
-| Consulted (C) | Abdullah Tecimen (QA), Ahmet Tarık Orhan (Backend), Mustafa Düşünceli (Frontend) |
+| Responsible (R) | Ali Eren Kurt, Lead Software Architect & Technical Lead |
+| Accountable (A) | Ahmet Can Vurmaz, Product Owner & Requirements Engineer |
+| Consulted (C) | Abdullah Tecimen (Quality Assurance & Test Automation Engineer), Ahmet Tarık Orhan (Implementation & Integration Engineer, Backend & API), Mustafa Düşünceli (Implementation & Integration Engineer, Frontend & UI) |
+| Informed (I) | Mehmet Umut Oğuzcan (Scrum Master & Agile Process Coach), Deniz Alp Oniki (DevOps & CI/CD Infrastructure Engineer) |
 | Version | 0.2 (updated for Sprint 1) · 2026-10-25 |
 | Related documents | `problem_definition.md` (proposal), [`openapi.yaml`](openapi.yaml) (API contract), [`raci_matrix.md`](raci_matrix.md) |
 | Repository | https://github.com/denizalponiki/Fleet-Tracking-System · License: MIT |
@@ -99,17 +100,17 @@ All users reach FleetSync through a web browser over HTTPS. There is no other cl
 
 | Capability | Responsibility | Module · API tag | Owner |
 |---|---|---|---|
-| Identity and access | Accounts, login with JWT, the three roles, role checks on every operation | `identity` · `auth` | Ahmet Can Vurmaz |
-| Driver eligibility | Driving licences, verification by the fleet manager, licence class and validity check for each trip | `identity` · `drivers` | Ahmet Can Vurmaz |
-| Fleet inventory | Vehicles, seat count, fuel type, required licence class, odometer, the vehicle status state machine | `vehicle` · `vehicles` | Ali Eren Kurt |
-| Predictive maintenance | Mileage- and date-based rules (oil change, tyres, inspection), remaining km / days, alerts, blocking vehicles before trips, service records, maintenance calendar | `maintenance` · `maintenance` | Ali Eren Kurt |
-| Reservations | Destinations, vehicle recommendation, reservation lifecycle, conflict prevention | `reservation` · `reservations`, `locations` | Ahmet Tarık Orhan |
-| Ride sharing | Matching requests with existing trips to the same destination, passengers and seats | `carpool` · `carpool` | Ahmet Tarık Orhan |
-| Handover | Pickup and return checklists, odometer and fuel level, damage reports, mileage limit check | `handover` · `handover` | Mehmet Umut Oğuzcan |
-| Fuel and expenses | Fuel receipts, consumption per 100 km, anomaly detection, trip expenses | `fuel` · `fuel` | Abdullah Tecimen |
-| Reporting | Cost, carbon footprint, utilisation, fleet summary, CSV export | `reporting` · `reports` | Deniz Alp Oniki |
-| User interface | Vehicle status cards, request and recommendation screens, checklists, maintenance calendar, reports | `frontend` | Mustafa Düşünceli |
-| Notifications | Deciding when to notify whom and with what message (handled within the app UI) | `shared` | Ali Eren Kurt |
+| Identity and access | Accounts, login with JWT, the three roles, role checks on every operation | `identity` · `auth` | Ahmet Can Vurmaz (Product Owner & Requirements Engineer) |
+| Driver eligibility | Driving licences, verification by the fleet manager, licence class and validity check for each trip | `identity` · `drivers` | Ahmet Can Vurmaz (Product Owner & Requirements Engineer) |
+| Fleet inventory | Vehicles, seat count, fuel type, required licence class, odometer, the vehicle status state machine | `vehicle` · `vehicles` | Ali Eren Kurt (Lead Software Architect & Technical Lead) |
+| Predictive maintenance | Mileage- and date-based rules (oil change, tyres, inspection), remaining km / days, alerts, blocking vehicles before trips, service records, maintenance calendar | `maintenance` · `maintenance` | Ali Eren Kurt (Lead Software Architect & Technical Lead) |
+| Reservations | Destinations, vehicle recommendation, reservation lifecycle, conflict prevention | `reservation` · `reservations`, `locations` | Ahmet Tarık Orhan (Implementation & Integration Engineer, Backend & API) |
+| Ride sharing | Matching requests with existing trips to the same destination, passengers and seats | `carpool` · `carpool` | Ahmet Tarık Orhan (Implementation & Integration Engineer, Backend & API) |
+| Handover | Pickup and return checklists, odometer and fuel level, damage reports, mileage limit check | `handover` · `handover` | Mehmet Umut Oğuzcan (Scrum Master & Agile Process Coach) |
+| Fuel and expenses | Fuel receipts, consumption per 100 km, anomaly detection, trip expenses | `fuel` · `fuel` | Abdullah Tecimen (Quality Assurance & Test Automation Engineer) |
+| Reporting | Cost, carbon footprint, utilisation, fleet summary, CSV export | `reporting` · `reports` | Deniz Alp Oniki (DevOps & CI/CD Infrastructure Engineer) |
+| User interface | Vehicle status cards, request and recommendation screens, checklists, maintenance calendar, reports | `frontend` | Mustafa Düşünceli (Implementation & Integration Engineer, Frontend & UI) |
+| Notifications | Deciding when to notify whom and with what message (handled within the app UI) | `shared` | Ali Eren Kurt (Lead Software Architect & Technical Lead) |
 
 ### 7.2 Outside: external systems FleetSync depends on
 
@@ -205,5 +206,5 @@ The release is complete when the jury demo runs end to end:
 
 | Role | Name | Decision | Date |
 |---|---|---|---|
-| Product Owner (A) | Ahmet Can Vurmaz | Approved | 2026-10-25 |
-| Lead Software Architect (R) | Ali Eren Kurt | | |
+| Product Owner & Requirements Engineer (A) | Ahmet Can Vurmaz | Approved | 2026-10-25 |
+| Lead Software Architect & Technical Lead (R) | Ali Eren Kurt | | |
