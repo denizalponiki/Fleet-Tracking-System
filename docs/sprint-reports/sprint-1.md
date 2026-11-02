@@ -43,27 +43,27 @@ Stand-up questions: What did I finish since the last stand-up? What will I do ne
 | Git-Flow rules (`git_flow.md`) | Mehmet Umut Oğuzcan | | | In progress |
 | `CODEOWNERS` and user story template | Mehmet Umut Oğuzcan | | | In progress |
 | GitHub Projects board (Backlog, Ready, In Progress, Review, Done) | Mehmet Umut Oğuzcan | | – | Done |
-| Branch protection on `main` and `develop` | Mehmet Umut Oğuzcan / Deniz Alp Oniki | | – | Done |
-| CI: OpenAPI lint | Deniz Alp Oniki | | | Done |
-| C4 level 1 diagram | Ali Eren Kurt | | | Done |
+| Branch protection on `main` and `develop` | Mehmet Umut Oğuzcan / Deniz Alp Oniki | | – | In Progress |
+| CI: OpenAPI lint | Deniz Alp Oniki | | | In Progress |
+| C4 level 1 diagram | Ali Eren Kurt | | | In Progress |
 | Prism mock exposed to frontend | Ahmet Tarık Orhan | | | Done |
 | Screen list and rough wireframes | Mustafa Düşünceli | | | Done |
 
 ## 5. Stand-up records
 
 
-### Stand-up · YYYY-MM-DD
+### Stand-up · (YYYY-MM-DD)
 Present: Everyone  · Absent: Nobody
 
 | Member | Done | Next | Blocker |
 |---|---|---|---|
-| Ahmet Can Vurmaz | Done | | |
-| Mehmet Umut Oğuzcan | Done | | |
-| Ali Eren Kurt | Done | | |
-| Abdullah Tecimen | Done | | |
-| Deniz Alp Oniki | Done | | |
-| Ahmet Tarık Orhan | Done | | |
-| Mustafa Düşünceli | Done | | |
+| Ahmet Can Vurmaz | In Progress | | |
+| Mehmet Umut Oğuzcan | In Progress | | |
+| Ali Eren Kurt | In Progress | | |
+| Abdullah Tecimen | In Progress | | |
+| Deniz Alp Oniki | In Progress | | |
+| Ahmet Tarık Orhan | In Progress | | |
+| Mustafa Düşünceli | In Progress | | |
 
 ## 6. Sprint review
 
