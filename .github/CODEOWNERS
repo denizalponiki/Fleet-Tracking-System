@@ -1,0 +1,60 @@
+# FleetSync · CODEOWNERS
+# Location: .github/CODEOWNERS
+# Owner of this file: Mehmet Umut Oğuzcan (Scrum Master). Source: docs/raci_matrix.md §5.
+#
+# Rules:
+# - The LAST matching pattern wins, so the default owner comes first.
+# - Every username must be a repository collaborator with write access,
+#   otherwise GitHub ignores the line.
+# - "**/<module>/" matches the module folder wherever the backend lives
+#   (e.g. backend/src/main/java/com/fleetsync/handover/), and also its tests.
+#   #1 PO        Ahmet Can Vurmaz     -> @Chadde7
+#   #2 SM        Mehmet Umut Oğuzcan  -> @umt06-1
+#   #3 Architect Ali Eren Kurt        -> @AliErenJ
+#   #4 QA        Abdullah Tecimen     -> @TheTeci
+#   #5 DevOps    Deniz Alp Oniki      -> @denizalponiki
+#   #6 Backend   Ahmet Tarık Orhan    -> @ahmettarikorhan
+#   #7 Frontend  Mustafa Düşünceli    -> @mustafadusunceli
+
+# Default: the Lead Architect reviews every PR
+*                               @AliErenJ
+
+# Contract and architecture decisions
+/docs/openapi.yaml              @AliErenJ @ahmettarikorhan
+/docs/adr/                      @AliErenJ
+/docs/c4/                       @AliErenJ
+/docs/uml/                      @AliErenJ
+
+# Requirements and process documents
+/docs/problem_definition.md     @Chadde7
+/docs/system_vision.md          @AliErenJ @Chadde7
+/docs/product_backlog.md        @Chadde7
+/docs/srs/                      @Chadde7
+/docs/raci_matrix.md            @umt06-1
+/docs/git_flow.md               @umt06-1
+/docs/sprint-reports/           @umt06-1
+/docs/test_plans_and_coverage.md @TheTeci
+
+# Backend modules
+**/identity/                    @Chadde7
+**/handover/                    @umt06-1
+**/vehicle/                     @AliErenJ
+**/maintenance/                 @AliErenJ
+**/shared/                      @AliErenJ
+**/fuel/                        @TheTeci
+**/reporting/                   @denizalponiki
+**/reservation/                 @ahmettarikorhan
+**/carpool/                     @ahmettarikorhan
+**/locations/                   @ahmettarikorhan
+
+# Frontend and end-to-end tests
+/frontend/                      @mustafadusunceli
+/e2e/                           @TheTeci
+
+# Infrastructure, CI and repository settings
+/infra/                         @denizalponiki
+/docker-compose.yml             @denizalponiki
+/.github/workflows/             @denizalponiki
+/.github/ISSUE_TEMPLATE/        @umt06-1
+/.github/pull_request_template.md @umt06-1
+/.github/CODEOWNERS             @umt06-1 @AliErenJ
