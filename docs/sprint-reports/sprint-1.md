@@ -23,9 +23,9 @@ Agree on the first version of FleetSync: problem, vision and system boundary, Op
 
 | Meeting | When | Length | Where | Output |
 |---|---|---|---|---|
-| Sprint planning | First day of each sprint, <First Day, 11.00> | 30 min | <micup> | This file, §4 |
-| Stand-up | Twice a week: <Saturday, 11.00> and <Sunday, 12.00> | 2 hour | <micup> | §5 |
-| Sprint review | Last day of the sprint, 10.00 | 30 min | <micup> | §6 |
+| Sprint planning | First day of each sprint, <First Day, 11.00> | 30 min | micup | This file, §4 |
+| Stand-up | Twice a week: <Saturday, 11.00> and <Sunday, 12.00> | 2 hour | micup | §5 |
+| Sprint review | Last day of the sprint, 10.00 | 30 min | micup | §6 |
 | Retrospective | Right after the review | 30 min | same | §7 |
 
 Stand-up questions: What did I finish since the last stand-up? What will I do next? What blocks me? Blockers go to [`impediment_log.md`](impediment_log.md).
@@ -39,9 +39,9 @@ Stand-up questions: What did I finish since the last stand-up? What will I do ne
 | OpenAPI contract (`openapi.yaml`, `api_usage.md`) | Ali Eren Kurt + module owners | | #14, #22 | Done |
 | Initial backlog (`product_backlog.md`) | Ahmet Can Vurmaz | | #17 | Done |
 | Test plan and QA templates | Abdullah Tecimen | | #9 | Done |
-| Roles and RACI matrix (`raci_matrix.md`) | Mehmet Umut Oğuzcan | | | Done |
-| Git-Flow rules (`git_flow.md`) | Mehmet Umut Oğuzcan | | | Done |
-| `CODEOWNERS` and user story template | Mehmet Umut Oğuzcan | | | Done |
+| Roles and RACI matrix (`raci_matrix.md`) | Mehmet Umut Oğuzcan | | #26 | Done |
+| Git-Flow rules (`git_flow.md`) | Mehmet Umut Oğuzcan | | #26 | Done |
+| `CODEOWNERS` and user story template | Mehmet Umut Oğuzcan | | #28, #29 | Done |
 | GitHub Projects board (Backlog, Ready, In Progress, Review, Done) | Mehmet Umut Oğuzcan | | – | Done |
 | Branch protection on `main` and `develop` | Mehmet Umut Oğuzcan / Deniz Alp Oniki | | – | In Progress |
 | CI: OpenAPI lint | Deniz Alp Oniki | | | In Progress |
@@ -53,7 +53,7 @@ Stand-up questions: What did I finish since the last stand-up? What will I do ne
 
 
 ### Stand-up · (YYYY-MM-DD)
-Present: Everyone  · Absent: Nobody
+Present: ...  · Absent: ...
 
 | Member | Done | Next | Blocker |
 |---|---|---|---|
