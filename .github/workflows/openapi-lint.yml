@@ -1,0 +1,33 @@
+
+name: OpenAPI Lint
+
+on:
+  pull_request:
+    branches:
+      - develop
+      - main
+  push:
+    branches:
+      - develop
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  openapi-lint:
+    name: Validate OpenAPI
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Validate OpenAPI contract
+        run: npx --yes @redocly/cli@1 lint docs/openapi.yaml --config redocly.yaml
