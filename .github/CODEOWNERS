@@ -7,7 +7,7 @@
 # - Every username must be a repository collaborator with write access,
 #   otherwise GitHub ignores the line.
 # - "**/<module>/" matches the module folder wherever the backend lives
-#   (e.g. backend/src/main/java/com/fleetsync/handover/), and also its tests.
+#   (e.g. backend/app/handover/ or backend/tests/handover/).
 #   #1 PO        Ahmet Can Vurmaz     -> @Chadde7
 #   #2 SM        Mehmet Umut Oğuzcan  -> @umt06-1
 #   #3 Architect Ali Eren Kurt        -> @AliErenJ
