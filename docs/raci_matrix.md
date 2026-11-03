@@ -40,7 +40,7 @@ Every member writes the unit tests for their own module. QA owns the test strate
 - Architecture decisions and ADRs (`docs/adr/`).
 - C4 (levels 1, 2, 3), UML (class, sequence, state, deployment), ER diagram and database schema.
 - Consistency of `docs/openapi.yaml`: naming, shared schemas, error format, versioning. Approves every PR that touches it.
-- Repository skeleton, module boundaries, ArchUnit rules, coding standard, code review leadership.
+- Repository skeleton, module boundaries, import-linter rules, coding standard, code review leadership.
 - Leads the architectural defence in front of the jury.
 - **Code:** `maintenance` + `vehicle`: rule engine, alerts, maintenance records, vehicle state machine (`/vehicles*`, `/maintenance/*`).
 
