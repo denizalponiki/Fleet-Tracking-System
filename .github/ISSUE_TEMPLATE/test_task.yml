@@ -1,0 +1,58 @@
+name: Test Task
+description: Plan a test activity (unit, integration or end-to-end)
+title: "[TEST] "
+labels: ["test"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form to plan tests for a feature. Test case IDs and scenarios come from docs/test_plans_and_coverage.md.
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: Test Scope
+      description: Which feature or module will be tested?
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: level
+    attributes:
+      label: Test Level
+      description: Select every level this task covers.
+      options:
+        - label: Unit
+        - label: Integration
+        - label: End-to-End (E2E)
+
+  - type: input
+    id: story
+    attributes:
+      label: Related User Story
+      description: ID from docs/product_backlog.md
+      placeholder: "US-20"
+    validations:
+      required: true
+
+  - type: textarea
+    id: scenarios
+    attributes:
+      label: Test Scenarios
+      description: List the test cases. Reuse IDs from the test plan where they exist.
+      value: |
+        | ID | Scenario | Input | Expected Result |
+        |----|----------|-------|-----------------|
+        | TC- |  |  |  |
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: done
+    attributes:
+      label: Definition of Done
+      description: Tick these when the task is finished (you can also tick them later on the issue page).
+      options:
+        - label: Tests are written and pass locally
+        - label: Tests pass in the CI pipeline
+        - label: Test results are linked to the related issue
