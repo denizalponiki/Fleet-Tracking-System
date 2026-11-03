@@ -207,4 +207,4 @@ The release is complete when the jury demo runs end to end:
 | Role | Name | Decision | Date |
 |---|---|---|---|
 | Product Owner & Requirements Engineer (A) | Ahmet Can Vurmaz | Approved | 2026-10-25 |
-| Lead Software Architect & Technical Lead (R) | Ali Eren Kurt | Approed | 2026-11-02 |
+| Lead Software Architect & Technical Lead (R) | Ali Eren Kurt | Approved | 2026-11-02 |
