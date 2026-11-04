@@ -10,3 +10,4 @@ This directory contains the Sprint documentation, architectural designs, API spe
 - `ci_cd_and_cost_reporting_api.md` — DevOps & CI/CD Infrastructure Engineer (Deniz Alp Oniki)
 - `carpool_reservation_api.md` — Implementation & Integration Engineer / Backend (Ahmet Tarık Orhan)
 - `ui_ux_flow_and_dashboard.md` — Implementation & Integration Engineer / Frontend (Mustafa Düşünceli)
+- - `api_usage.md` — API contract usage, validation, and mock server instructions
