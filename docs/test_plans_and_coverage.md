@@ -4,7 +4,7 @@
 |---|---|
 | Course | SENG 321 Software Engineering · Sprint 1 |
 | Owner | Abdullah Tecimen – Quality Assurance & Test Automation Engineer |
-| Version | 0.2 · Sprint 1 (test cases linked to user stories and aligned with the API contract) |
+| Version | 0.3 · Sprint 1 (aligned with the revised `openapi.yaml` of 2026-11-02) |
 | Related documents | [`product_backlog.md`](product_backlog.md), [`openapi.yaml`](openapi.yaml), [`system_vision.md`](system_vision.md), [`raci_matrix.md`](raci_matrix.md) |
 
 ---
@@ -104,10 +104,13 @@ Rule: a vehicle is blocked when remaining km < estimated trip km + 100 km safety
 | TC-RES-01 | US-20 | Reserve a free, safe vehicle with an eligible driver | `201`; reservation `CONFIRMED` | I |
 | TC-RES-02 | US-20 | Overlapping period on the same vehicle (10:00–12:00 vs 11:00–13:00) | `409 RESERVATION_CONFLICT` | U, I |
 | TC-RES-03 | US-20 | Back-to-back period (10:00–12:00 vs 12:00–14:00) | `201` (no overlap) | U, I |
-| TC-RES-04 | US-20 | Vehicle blocked for maintenance reserved directly through the API | `422 VEHICLE_MAINTENANCE_DUE` | I |
+| TC-RES-04 | US-20 | Vehicle blocked for maintenance reserved directly through the API | `409 VEHICLE_MAINTENANCE_DUE` | I |
 | TC-RES-05 | US-20 | End time before start time, or more than 14 days after it | `400 VALIDATION_ERROR` | I |
 | TC-RES-06 | US-22 | Cancel an `ACTIVE` reservation | `409 RESERVATION_NOT_CANCELLABLE` | I |
 | TC-RES-07 | US-21 | Staff member opens another user's reservation | `403 FORBIDDEN` | I |
+| TC-RES-08 | US-20 | Vehicle that is `IN_MAINTENANCE` or `OUT_OF_SERVICE` reserved directly through the API | `409 VEHICLE_UNAVAILABLE` | I |
+| TC-RES-09 | US-20 | Driver's licence expires before the trip ends | `422 LICENSE_EXPIRED` | I |
+| TC-RES-10 | US-20 | Vehicle with fewer seats than requested reserved directly through the API | `422 SEAT_CAPACITY_EXCEEDED` | I |
 
 ### 6.4 Driver Eligibility
 
@@ -191,7 +194,7 @@ Rule: same destination, departure within 30 minutes, enough free seats.
 | US-13 | TC-MNT-05 – TC-MNT-07, TC-E2E-03 |
 | US-15 | TC-MNT-08, TC-MNT-09, TC-E2E-04 |
 | US-19 | TC-REC-04 – TC-REC-06, TC-E2E-01 |
-| US-20, US-21 | TC-RES-01 – TC-RES-05, TC-RES-07, TC-E2E-01 |
+| US-20, US-21 | TC-RES-01 – TC-RES-05, TC-RES-07 – TC-RES-10, TC-E2E-01 |
 | US-23, US-24 | TC-POOL-01 – TC-POOL-06, TC-E2E-02 |
 | US-26, US-27 | TC-HND-01 – TC-HND-06, TC-E2E-03 |
 | US-29 | TC-FUEL-01 – TC-FUEL-04 |
@@ -212,7 +215,8 @@ QA reviewed all acceptance criteria in `product_backlog.md` for testability and 
 | F3 | The CO₂ factor per litre is not defined, so the carbon report cannot be checked against an expected value. | US-35 | Open |
 | F4 | "Available working hours" for utilisation is not defined. | US-36 | Open |
 | F5 | The number of earlier full-tank intervals needed before a fuel average is used is not defined. | US-31 | Open |
-| F6 | The 422 response of `POST /reservations` covers several business rules; tests check the `code` field (`VEHICLE_MAINTENANCE_DUE`, `LICENSE_EXPIRED`, `LICENSE_CLASS_MISMATCH`) rather than the HTTP status alone. | US-20 | Applied in this plan |
+| F6 | `POST /reservations` returns several error codes under the same HTTP status: 409 for vehicle problems (`RESERVATION_CONFLICT`, `VEHICLE_MAINTENANCE_DUE`, `VEHICLE_UNAVAILABLE`) and 422 for driver or request problems (`LICENSE_EXPIRED`, `LICENSE_CLASS_MISMATCH`, `SEAT_CAPACITY_EXCEEDED`). Tests check the `code` field, not only the HTTP status. | US-20 | Applied in this plan |
+| F8 | The revised `openapi.yaml` (2026-11-02) returns `409 VEHICLE_MAINTENANCE_DUE` when a blocked vehicle is reserved; test plan v0.2 and `product_backlog.md` US-20 criterion 4 still said 422. Reported by the Backend Engineer in `carpool_reservation_api.md`. Test plan fixed in v0.3; backlog to be updated by the Product Owner. | US-20 | Test plan fixed; backlog open |
 | F7 | Test plan v0.1 used `MAINTENANCE` as a vehicle status and generic HTTP names; aligned with `IN_MAINTENANCE` and the API error codes in v0.2. | Test plan | Fixed |
 
 All other acceptance criteria are measurable and have explicit boundary values.
