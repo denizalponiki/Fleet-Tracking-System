@@ -1,0 +1,99 @@
+name: Bug Report
+description: Report a defect found in FleetSync
+title: "[BUG] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a defect. Fill in every required field so the module owner can reproduce it.
+        QA verifies the fix and closes the issue.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A short, clear description of the defect.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: Numbered steps that lead to the defect.
+      placeholder: |
+        1. Log in as a staff member
+        2. Reserve vehicle A for 10:00–12:00
+        3. Reserve vehicle A again for 11:00–13:00
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Result
+      description: What should have happened? Use the status values and error codes in docs/openapi.yaml when possible.
+      placeholder: "409 RESERVATION_CONFLICT"
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Result
+      description: What actually happened?
+      placeholder: "201 Created – the second reservation was accepted"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      options:
+        - Critical (system crash, data loss, demo flow blocked)
+        - Major (main feature does not work)
+        - Minor (secondary feature or UI issue)
+        - Trivial (typo, cosmetic)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: module
+    attributes:
+      label: Module
+      options:
+        - identity
+        - vehicle
+        - maintenance
+        - reservation
+        - carpool
+        - handover
+        - fuel
+        - reporting
+        - frontend
+        - infrastructure / CI
+        - documentation
+    validations:
+      required: true
+
+  - type: input
+    id: story
+    attributes:
+      label: Related User Story
+      description: ID from docs/product_backlog.md
+      placeholder: "US-20"
+
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Branch or commit, browser and OS
+      placeholder: "develop @ a1b2c3d, Chrome 130, Windows 11"
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Screenshots / Logs
+      description: Drag images here or paste log output.
