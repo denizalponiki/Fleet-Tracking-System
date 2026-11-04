@@ -13,5 +13,4 @@ SENG 321 Software Engineering Term Project
 
 ## Project Structure
 - `docs/`: System documentation, SRS, and OpenAPI specifications
-- `src/`: Application source code# FleetSync
-Vehicle Fleet, Periodic Maintenance, and Shared Task System
+- `src/`: Application source code
