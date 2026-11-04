@@ -380,7 +380,7 @@ Acceptance criteria:
 1. **Given** a free, safe vehicle and an eligible driver, **when** a reservation is made, **then** it is created with status `CONFIRMED`.
 2. **Given** a reservation 10:00–12:00, **when** another reservation is made for 11:00–13:00 on the same vehicle, **then** the request is rejected with 409 `RESERVATION_CONFLICT`.
 3. **Given** a reservation 10:00–12:00, **when** another reservation is made for 12:00–14:00 on the same vehicle, **then** it is accepted (no overlap).
-4. **Given** a vehicle blocked for maintenance, **when** it is reserved directly via the API, **then** the request is rejected with 422 `VEHICLE_MAINTENANCE_DUE`.
+4. **Given** a vehicle blocked for maintenance, **when** it is reserved directly via the API, **then** rejected with 409 VEHICLE_MAINTENANCE_DUE.
 5. **Given** an end time before the start time, or more than 14 days later, **when** a reservation is made, **then** the request is rejected with 400 `VALIDATION_ERROR`.
 
 SP: 5 · Priority: Must · Depends on: US-19 · Owner: Ahmet Tarık Orhan · Target: Sprint 3  
