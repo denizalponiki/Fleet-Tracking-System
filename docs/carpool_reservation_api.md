@@ -37,7 +37,7 @@ Shared responses on these operations:
 
 **Vehicle blocked for maintenance.** A vehicle is not offered for a trip when, for any maintenance rule, remaining kilometres are less than the estimated trip plus a 100 km safety buffer, or the rule's due date falls before the trip ends (`system_vision.md` §8, trip blocking). `GET /vehicles/recommendations` keeps that vehicle in `blocked` with `MAINTENANCE_DUE` or `MAINTENANCE_DUE_SOON`. Calling `POST /reservations` anyway is rejected with `409 VEHICLE_MAINTENANCE_DUE`. The body may include `suggestedVehicleIds`. A vehicle that is already `IN_MAINTENANCE` or `OUT_OF_SERVICE` is rejected with `409 VEHICLE_UNAVAILABLE`.
 
-`product_backlog.md` US-20 acceptance criterion 4 and `test_plans_and_coverage.md` (TC-RES-04, note F6) still describe the maintenance case as `422 VEHICLE_MAINTENANCE_DUE`. This note follows the contract. The mismatch is filed for the lead architect in #52.
+`product_backlog.md` US-20 acceptance criterion 4 and `test_plans_and_coverage.md` TC-RES-04 use the same code, `409 VEHICLE_MAINTENANCE_DUE` (#66 and #64).
 
 **Driver licence.** The driver needs a verified licence of a class that allows the vehicle, still valid when the trip ends. Otherwise `POST /reservations` returns `422 LICENSE_EXPIRED` or `422 LICENSE_CLASS_MISMATCH`. The same reasons can appear on a blocked recommendation (`LICENSE_EXPIRED`, `LICENSE_CLASS_MISMATCH`).
 
