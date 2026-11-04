@@ -216,7 +216,7 @@ QA reviewed all acceptance criteria in `product_backlog.md` for testability and 
 | F4 | "Available working hours" for utilisation is not defined. | US-36 | Open |
 | F5 | The number of earlier full-tank intervals needed before a fuel average is used is not defined. | US-31 | Open |
 | F6 | `POST /reservations` returns several error codes under the same HTTP status: 409 for vehicle problems (`RESERVATION_CONFLICT`, `VEHICLE_MAINTENANCE_DUE`, `VEHICLE_UNAVAILABLE`) and 422 for driver or request problems (`LICENSE_EXPIRED`, `LICENSE_CLASS_MISMATCH`, `SEAT_CAPACITY_EXCEEDED`). Tests check the `code` field, not only the HTTP status. | US-20 | Applied in this plan |
-| F8 | The revised `openapi.yaml` (2026-11-02) returns `409 VEHICLE_MAINTENANCE_DUE` when a blocked vehicle is reserved; test plan v0.2 and `product_backlog.md` US-20 criterion 4 still said 422. Reported by the Backend Engineer in `carpool_reservation_api.md`. Test plan fixed in v0.3; backlog to be updated by the Product Owner. | US-20 | Test plan fixed; backlog open |
+| F8 | The revised `openapi.yaml` (2026-11-02) returns `409 VEHICLE_MAINTENANCE_DUE` when a blocked vehicle is reserved; test plan v0.2 and `product_backlog.md` US-20 criterion 4 still said 422. Reported by the Backend Engineer in `carpool_reservation_api.md`.    Test plan fixed in v0.3 (#64); backlog fixed by the Product Owner (#66). | US-20 | Fixed | 
 | F7 | Test plan v0.1 used `MAINTENANCE` as a vehicle status and generic HTTP names; aligned with `IN_MAINTENANCE` and the API error codes in v0.2. | Test plan | Fixed |
 
 All other acceptance criteria are measurable and have explicit boundary values.
