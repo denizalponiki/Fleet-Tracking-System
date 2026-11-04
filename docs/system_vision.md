@@ -62,7 +62,7 @@ The full problem analysis is in the project proposal. In short:
 | Vehicle workshop | Receives vehicles for service | Outside the system; the maintenance officer records its work |
 | Course instructor and jury | Assess the product | Not a system user |
 
-## 6. System context
+## 6. System context (C4 Level 1)
 
 The diagram shows FleetSync as one system. Every arrow names the information exchanged and why.
 
