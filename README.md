@@ -14,3 +14,21 @@ SENG 321 Software Engineering Term Project
 ## Project Structure
 - `docs/`: System documentation, SRS, and OpenAPI specifications
 - `src/`: Application source code
+
+
+## Local PostgreSQL setup
+
+With Docker running, open PowerShell in the repository root and run:
+
+```powershell
+Copy-Item .env.example .env
+docker compose config --quiet
+docker compose up -d db
+docker compose exec db pg_isready -U fleet -d fleet
+```
+
+If the database is still starting, wait a few seconds and repeat the last command. When it prints `accepting connections`, PostgreSQL is ready.
+
+To stop the database, run `docker compose down`. The named volume keeps the data between runs.
+
+This Sprint 1 setup starts PostgreSQL. Frontend and backend integration is tracked in #103.
