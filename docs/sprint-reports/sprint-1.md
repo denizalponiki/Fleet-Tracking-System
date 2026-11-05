@@ -36,23 +36,24 @@ Stand-up questions: What did I finish since the last stand-up? What will I do ne
 |---|---|---|---|---|
 | Project proposal and problem definition (`problem_definition.md`) | Ahmet Can Vurmaz | | #14, #16 | Done |
 | System vision and boundary (`system_vision.md`) | Ahmet Can Vurmaz / Ali Eren Kurt | | #10, #12, #24 | Done |
-| OpenAPI contract (`openapi.yaml`, `api_usage.md`) | Ali Eren Kurt + module owners | | #14, #22 | Done |
+| OpenAPI contract (`openapi.yaml`, `api_usage.md`) | Ali Eren Kurt + module owners | | #14, #22, #119 | Done |
 | Initial backlog (`product_backlog.md`) | Ahmet Can Vurmaz | | #17 | Done |
 | Test plan and QA templates | Abdullah Tecimen | | #9 | Done |
-| Roles and RACI matrix (`raci_matrix.md`) | Mehmet Umut Oğuzcan | | #26 | Done |
+| Roles and RACI matrix (`raci_matrix.md`) | Mehmet Umut Oğuzcan | | #26, #44 | Done |
 | Git-Flow rules (`git_flow.md`) | Mehmet Umut Oğuzcan | | #26 | Done |
-| `CODEOWNERS` and user story template | Mehmet Umut Oğuzcan | | #28, #29 | Done |
+| `CODEOWNERS` and user story template | Mehmet Umut Oğuzcan | | #28, #29, #45, #48 | Done |
+| Sprint report and impediment log (`sprint-reports/`) | Mehmet Umut Oğuzcan | #131 | #26, #30–#35, #132 | Done |
 | GitHub Projects board (Backlog, Ready, In Progress, Review, Done) | Mehmet Umut Oğuzcan | | – | Not started |
 | Branch protection on `main` and `develop` | Mehmet Umut Oğuzcan / Deniz Alp Oniki | | – | In Progress |
 | CI: OpenAPI lint (`.github/workflows/openapi-lint.yml`) | Deniz Alp Oniki | #36 | #37 | Done |
-| C4 level 1 diagram (`system_vision.md` §6) | Ali Eren Kurt | | | Done |
+| C4 level 1 diagram (`system_vision.md` §6) | Ali Eren Kurt | | #120 | Done |
 | Reservation and carpool API notes, Prism mock (`carpool_reservation_api.md`) | Ahmet Tarık Orhan | #53 | #54 | Done |
 | Screen list, UI/UX flow (`ui_ux_flow_and_dashboard.md`) | Mustafa Düşünceli | #39 | #109 | Done |
 | CI/CD and reporting documentation (`ci_cd_and_cost_reporting_api.md`) | Deniz Alp Oniki | #67 | #68 | Done |
 | Handover user stories as GitHub issues (US-26, US-27, US-28) | Mehmet Umut Oğuzcan | #128, #129, #130 | – | Done |
-| `docker-compose.yml` skeleton | Deniz Alp Oniki | | | Not started |
-| First ADRs (`docs/adr/`) | Ali Eren Kurt | | | Not started |
-| `develop` → `main` merge and `sprint-1` tag | Deniz Alp Oniki | | | Not started |
+| `docker-compose.yml` skeleton | Deniz Alp Oniki | #133 | #134 | Done |
+| First ADR (`docs/adr/ADR-001-python-fastapi.md`) | Ali Eren Kurt | #135 | #136 | Done |
+| `develop` → `main` merge and `sprint-1` tag | Deniz Alp Oniki | | | In progress |
 
 ## 5. Stand-up records
 
@@ -112,6 +113,8 @@ Present: …  · Absent: …
 | RACI | [`docs/raci_matrix.md`](../raci_matrix.md) |
 | Git-Flow rules | [`docs/git_flow.md`](../git_flow.md) |
 | Templates | [`.github/`](../../.github) |
+| ADR-001 | [`docs/adr/ADR-001-python-fastapi.md`](../adr/ADR-001-python-fastapi.md) |
+| Docker Compose skeleton | [`docker-compose.yml`](../../docker-compose.yml) |
 | CI/CD documentation | [`docs/ci_cd_and_cost_reporting_api.md`](../ci_cd_and_cost_reporting_api.md) |
 | Reservation and carpool API notes | [`docs/carpool_reservation_api.md`](../carpool_reservation_api.md) |
 | UI/UX flow | [`docs/ui_ux_flow_and_dashboard.md`](../ui_ux_flow_and_dashboard.md) |
