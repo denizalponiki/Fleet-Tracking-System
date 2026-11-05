@@ -1,0 +1,7 @@
+extends:
+  - recommended
+
+rules:
+  operation-operationId: error
+  operation-2xx-response: error
+  no-unresolved-refs: error

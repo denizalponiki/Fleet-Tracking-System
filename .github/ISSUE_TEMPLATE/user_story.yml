@@ -1,0 +1,157 @@
+name: User Story
+description: A backlog item from docs/product_backlog.md (one story = one issue)
+title: "[US-xx] "
+labels: ["story"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Title format: `[US-20] Reserve a vehicle for a trip` (same ID and title as in docs/product_backlog.md).
+        Copy the story and its acceptance criteria from the backlog. Each acceptance criterion becomes at least one test case.
+
+  - type: dropdown
+    id: role
+    attributes:
+      label: Role (As a …)
+      options:
+        - staff member / driver
+        - fleet manager
+        - maintenance officer
+        - user of any role
+        - team member (technical story)
+    validations:
+      required: true
+
+  - type: input
+    id: capability
+    attributes:
+      label: Capability (I want …)
+      placeholder: "reserve a recommended vehicle"
+    validations:
+      required: true
+
+  - type: input
+    id: value
+    attributes:
+      label: Value (so that …)
+      placeholder: "the vehicle is held for my trip"
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance Criteria
+      description: Copy from docs/product_backlog.md, one criterion per line in Given / When / Then form.
+      value: |
+        - **AC1** · Given … When … Then …
+        - **AC2** · Given … When … Then …
+    validations:
+      required: true
+
+  - type: dropdown
+    id: epic
+    attributes:
+      label: Epic
+      options:
+        - E1 · Identity, Access and Driver Eligibility
+        - E2 · Fleet Inventory
+        - E3 · Predictive Maintenance
+        - E4 · Reservations and Vehicle Recommendation
+        - E5 · Ride Sharing
+        - E6 · Vehicle Handover
+        - E7 · Fuel and Expenses
+        - E8 · Reporting
+        - E9 · User Interface
+        - E10 · Platform, Quality and Delivery
+    validations:
+      required: true
+
+  - type: dropdown
+    id: module
+    attributes:
+      label: Module
+      options:
+        - identity
+        - vehicle
+        - maintenance
+        - reservation
+        - carpool
+        - handover
+        - fuel
+        - reporting
+        - frontend
+        - platform
+    validations:
+      required: true
+
+  - type: dropdown
+    id: points
+    attributes:
+      label: Story points
+      options:
+        - "1"
+        - "2"
+        - "3"
+        - "5"
+        - "8"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority (MoSCoW)
+      options:
+        - Must
+        - Should
+        - Could
+    validations:
+      required: true
+
+  - type: dropdown
+    id: sprint
+    attributes:
+      label: Target sprint
+      options:
+        - Sprint 2
+        - Sprint 3
+        - Final
+    validations:
+      required: true
+
+  - type: input
+    id: depends
+    attributes:
+      label: Depends on
+      description: Issue numbers of the stories this one depends on.
+      placeholder: "#12, #15"
+
+  - type: textarea
+    id: endpoints
+    attributes:
+      label: API endpoints
+      description: Endpoints from docs/openapi.yaml used by this story.
+      placeholder: "POST /reservations/{reservationId}/pickup"
+
+  - type: checkboxes
+    id: ready
+    attributes:
+      label: Definition of Ready
+      options:
+        - label: Owner assigned and story points estimated
+        - label: Acceptance criteria are testable (Given / When / Then)
+        - label: Endpoints exist in docs/openapi.yaml
+        - label: Dependencies are done or planned in the same sprint
+
+  - type: checkboxes
+    id: done
+    attributes:
+      label: Definition of Done
+      description: Tick these later on the issue page as the story is completed.
+      options:
+        - label: Code merged into develop through a reviewed PR (merge commit, no squash)
+        - label: Unit tests written, CI green
+        - label: Every acceptance criterion verified by a test
+        - label: docs/openapi.yaml still matches the implementation
+        - label: Diagrams updated if the structure changed
