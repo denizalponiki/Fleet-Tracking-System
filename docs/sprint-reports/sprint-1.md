@@ -23,9 +23,9 @@ Agree on the first version of FleetSync: problem, vision and system boundary, Op
 
 | Meeting | When | Length | Where | Output |
 |---|---|---|---|---|
-| Sprint planning | First day of each sprint, <First Day, 11.00> | 30 min | micup | This file, §4 |
-| Stand-up | Twice a week: <Saturday, 11.00> and <Sunday, 12.00> | 2 hour | micup | §5 |
-| Sprint review | Last day of the sprint, 10.00 | 30 min | micup | §6 |
+| Sprint planning | First day of each sprint, 11:00 | 30 min | micup | This file, §4 |
+| Stand-up | Twice a week: Saturday 11:00 and Sunday 12:00 | 2 hours | micup | §5 |
+| Sprint review | Last day of the sprint, 10:00 | 30 min | micup | §6 |
 | Retrospective | Right after the review | 30 min | same | §7 |
 
 Stand-up questions: What did I finish since the last stand-up? What will I do next? What blocks me? Blockers go to [`impediment_log.md`](impediment_log.md).
@@ -42,20 +42,26 @@ Stand-up questions: What did I finish since the last stand-up? What will I do ne
 | Roles and RACI matrix (`raci_matrix.md`) | Mehmet Umut Oğuzcan | | #26 | Done |
 | Git-Flow rules (`git_flow.md`) | Mehmet Umut Oğuzcan | | #26 | Done |
 | `CODEOWNERS` and user story template | Mehmet Umut Oğuzcan | | #28, #29 | Done |
-| GitHub Projects board (Backlog, Ready, In Progress, Review, Done) | Mehmet Umut Oğuzcan | | – | Done |
+| GitHub Projects board (Backlog, Ready, In Progress, Review, Done) | Mehmet Umut Oğuzcan | | – | Not started |
 | Branch protection on `main` and `develop` | Mehmet Umut Oğuzcan / Deniz Alp Oniki | | – | In Progress |
-| CI: OpenAPI lint | Deniz Alp Oniki | | | In Progress |
-| C4 level 1 diagram | Ali Eren Kurt | | | In Progress |
-| Prism mock exposed to frontend | Ahmet Tarık Orhan | | | Done |
-| Screen list and rough wireframes | Mustafa Düşünceli | | | Done |
+| CI: OpenAPI lint (`.github/workflows/openapi-lint.yml`) | Deniz Alp Oniki | #36 | #37 | Done |
+| C4 level 1 diagram (`system_vision.md` §6) | Ali Eren Kurt | | | Done |
+| Reservation and carpool API notes, Prism mock (`carpool_reservation_api.md`) | Ahmet Tarık Orhan | #53 | #54 | Done |
+| Screen list, UI/UX flow (`ui_ux_flow_and_dashboard.md`) | Mustafa Düşünceli | #39 | #109 | Done |
+| CI/CD and reporting documentation (`ci_cd_and_cost_reporting_api.md`) | Deniz Alp Oniki | #67 | #68 | Done |
+| Handover user stories as GitHub issues (US-26, US-27, US-28) | Mehmet Umut Oğuzcan | #128, #129, #130 | – | Done |
+| `docker-compose.yml` skeleton | Deniz Alp Oniki | | | Not started |
+| First ADRs (`docs/adr/`) | Ali Eren Kurt | | | Not started |
+| `develop` → `main` merge and `sprint-1` tag | Deniz Alp Oniki | | | Not started |
 
 ## 5. Stand-up records
 
+<!-- Copy this block for every stand-up. Write only what was actually said. -->
 
-### Stand-up · (YYYY-MM-DD)
-Present: ...  · Absent: ...
+### Stand-up · YYYY-MM-DD
+Present: …  · Absent: …
 
-| Member | Done | Next | Blocker |
+| Member | Done since last stand-up | Next | Blocker |
 |---|---|---|---|
 | Ahmet Can Vurmaz | | | |
 | Mehmet Umut Oğuzcan | | | |
@@ -98,7 +104,6 @@ Present: ...  · Absent: ...
 |---|---|
 | Repository | https://github.com/denizalponiki/Fleet-Tracking-System |
 | Tag | https://github.com/denizalponiki/Fleet-Tracking-System/releases/tag/sprint-1 |
-| Projects board | https://github.com/denizalponiki/Fleet-Tracking-System/projects |
 | Problem definition | [`docs/problem_definition.md`](../problem_definition.md) |
 | System vision | [`docs/system_vision.md`](../system_vision.md) |
 | OpenAPI contract | [`docs/openapi.yaml`](../openapi.yaml) |
@@ -107,3 +112,7 @@ Present: ...  · Absent: ...
 | RACI | [`docs/raci_matrix.md`](../raci_matrix.md) |
 | Git-Flow rules | [`docs/git_flow.md`](../git_flow.md) |
 | Templates | [`.github/`](../../.github) |
+| CI/CD documentation | [`docs/ci_cd_and_cost_reporting_api.md`](../ci_cd_and_cost_reporting_api.md) |
+| Reservation and carpool API notes | [`docs/carpool_reservation_api.md`](../carpool_reservation_api.md) |
+| UI/UX flow | [`docs/ui_ux_flow_and_dashboard.md`](../ui_ux_flow_and_dashboard.md) |
+| Handover epic and user stories | [#74](https://github.com/denizalponiki/Fleet-Tracking-System/issues/74) · [#128](https://github.com/denizalponiki/Fleet-Tracking-System/issues/128) · [#129](https://github.com/denizalponiki/Fleet-Tracking-System/issues/129) · [#130](https://github.com/denizalponiki/Fleet-Tracking-System/issues/130) |
