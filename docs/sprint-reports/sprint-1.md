@@ -43,7 +43,7 @@ Stand-up questions: What did I finish since the last stand-up? What will I do ne
 | Git-Flow rules (`git_flow.md`) | Mehmet Umut Oğuzcan | | #26 | Done |
 | `CODEOWNERS` and user story template | Mehmet Umut Oğuzcan | | #28, #29, #45, #48 | Done |
 | Sprint report and impediment log (`sprint-reports/`) | Mehmet Umut Oğuzcan | #131 | #26, #30–#35, #132 | Done |
-| GitHub Projects board (Backlog, Ready, In Progress, Review, Done) | Mehmet Umut Oğuzcan | | – | Not started |
+| GitHub Projects board (Backlog, Ready, In Progress, Review, Done) | Mehmet Umut Oğuzcan | | – | Done |
 | Branch protection on `main` and `develop` | Mehmet Umut Oğuzcan / Deniz Alp Oniki | | – | In Progress |
 | CI: OpenAPI lint (`.github/workflows/openapi-lint.yml`) | Deniz Alp Oniki | #36 | #37 | Done |
 | C4 level 1 diagram (`system_vision.md` §6) | Ali Eren Kurt | | #120 | Done |
@@ -89,21 +89,26 @@ Present: …  · Absent: …
 
 ## 8. Weekly contribution check
 
+Commits: non-merge commits on `develop`. PRs opened, reviews (on other members' PRs) and issues opened: GitHub search counts.
+
 | Member | Commits | PRs opened | Reviews | Issues | Checked on |
 |---|---|---|---|---|---|
-| Ahmet Can Vurmaz | | | | | |
-| Mehmet Umut Oğuzcan | | | | | |
-| Ali Eren Kurt | | | | | |
-| Abdullah Tecimen | | | | | |
-| Deniz Alp Oniki | | | | | |
-| Ahmet Tarık Orhan | | | | | |
-| Mustafa Düşünceli | | | | | |
+| Ahmet Can Vurmaz | 3 | 3 | 16 | 17 | 2026-11-05 |
+| Mehmet Umut Oğuzcan | 17 | 16 | 4 | 7 | 2026-11-05 |
+| Ali Eren Kurt | 11 | 12 | 24 | 13 | 2026-11-05 |
+| Abdullah Tecimen | 10 | 7 | 11 | 15 | 2026-11-05 |
+| Deniz Alp Oniki | 20 | 15 | 7 | 11 | 2026-11-05 |
+| Ahmet Tarık Orhan | 2 | 2 | 3 | 11 | 2026-11-05 |
+| Mustafa Düşünceli | 1 | 1 | 2 | 9 | 2026-11-05 |
+
+Every member has at least one commit, PR, review and issue (IMP-03 closed).
 
 ## 9. Submission evidence list
 
 | Item | Link |
 |---|---|
 | Repository | https://github.com/denizalponiki/Fleet-Tracking-System |
+| Projects board | https://github.com/users/umt06-1/projects/2 |
 | Tag | https://github.com/denizalponiki/Fleet-Tracking-System/releases/tag/sprint-1 |
 | Problem definition | [`docs/problem_definition.md`](../problem_definition.md) |
 | System vision | [`docs/system_vision.md`](../system_vision.md) |
