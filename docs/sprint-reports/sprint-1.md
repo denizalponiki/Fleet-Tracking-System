@@ -53,7 +53,7 @@ Stand-up questions: What did I finish since the last stand-up? What will I do ne
 | Handover user stories as GitHub issues (US-26, US-27, US-28) | Mehmet Umut Oğuzcan | #128, #129, #130 | – | Done |
 | `docker-compose.yml` skeleton | Deniz Alp Oniki | #133 | #134 | Done |
 | First ADR (`docs/adr/ADR-001-python-fastapi.md`) | Ali Eren Kurt | #135 | #136 | Done |
-| `develop` → `main` merge and `sprint-1` tag | Deniz Alp Oniki | | #144 (merge) | In progress (tag pending) |
+| `develop` → `main` merge and `sprint-1` tag | Deniz Alp Oniki | | #144 (merge) | Done |
 
 ## 5. Stand-up records
 
