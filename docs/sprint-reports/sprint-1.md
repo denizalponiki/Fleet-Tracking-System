@@ -57,6 +57,20 @@ Stand-up questions: What did I finish since the last stand-up? What will I do ne
 
 ## 5. Stand-up records
 
+### Stand-up · 2026-10-31 (Saturday, Micup)
+Present: all seven members · Absent: none
+Format: each member presented the Sprint 1 task they own.
+
+| Member | Sprint 1 task presented | Blocker |
+|---|---|---|
+| Ahmet Can Vurmaz | Project proposal, problem definition and initial product backlog | – |
+| Mehmet Umut Oğuzcan | RACI matrix, Git-Flow rules, repository templates and sprint records | – |
+| Ali Eren Kurt | System vision, C4 level 1 and the OpenAPI contract | – |
+| Abdullah Tecimen | Test strategy, test plan and QA issue templates | – |
+| Deniz Alp Oniki | Repository setup, CI (OpenAPI lint) and Docker Compose skeleton | – |
+| Ahmet Tarık Orhan | Reservation and carpool API paths, Prism mock | – |
+| Mustafa Düşünceli | Screen list, UI/UX flow and consumer review of the OpenAPI contract | – |
+
 <!-- Copy this block for every stand-up. Write only what was actually said. -->
 
 ### Stand-up · YYYY-MM-DD
