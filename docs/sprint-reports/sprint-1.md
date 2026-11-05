@@ -44,7 +44,7 @@ Stand-up questions: What did I finish since the last stand-up? What will I do ne
 | `CODEOWNERS` and user story template | Mehmet Umut Oğuzcan | | #28, #29, #45, #48 | Done |
 | Sprint report and impediment log (`sprint-reports/`) | Mehmet Umut Oğuzcan | #131 | #26, #30–#35, #132 | Done |
 | GitHub Projects board (Backlog, Ready, In Progress, Review, Done) | Mehmet Umut Oğuzcan | | – | Done |
-| Branch protection on `main` and `develop` | Mehmet Umut Oğuzcan / Deniz Alp Oniki | | – | In Progress |
+| Branch protection on `main` and `develop` (repository ruleset "Branch Protection") | Mehmet Umut Oğuzcan / Deniz Alp Oniki | | – | Done |
 | CI: OpenAPI lint (`.github/workflows/openapi-lint.yml`) | Deniz Alp Oniki | #36 | #37 | Done |
 | C4 level 1 diagram (`system_vision.md` §6) | Ali Eren Kurt | | #120 | Done |
 | Reservation and carpool API notes, Prism mock (`carpool_reservation_api.md`) | Ahmet Tarık Orhan | #53 | #54 | Done |
@@ -53,7 +53,7 @@ Stand-up questions: What did I finish since the last stand-up? What will I do ne
 | Handover user stories as GitHub issues (US-26, US-27, US-28) | Mehmet Umut Oğuzcan | #128, #129, #130 | – | Done |
 | `docker-compose.yml` skeleton | Deniz Alp Oniki | #133 | #134 | Done |
 | First ADR (`docs/adr/ADR-001-python-fastapi.md`) | Ali Eren Kurt | #135 | #136 | Done |
-| `develop` → `main` merge and `sprint-1` tag | Deniz Alp Oniki | | | In progress |
+| `develop` → `main` merge and `sprint-1` tag | Deniz Alp Oniki | | #144 (merge) | In progress (tag pending) |
 
 ## 5. Stand-up records
 
