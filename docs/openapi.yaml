@@ -813,7 +813,17 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
-        '409': { $ref: '#/components/responses/InvalidReservationState' }
+        '409':
+          description: The trip has already started, so passengers can no longer be removed
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+              example:
+                type: https://fleetsync.local/problems/invalid-reservation-state
+                title: Invalid reservation state
+                status: 409
+                code: INVALID_RESERVATION_STATE
+                detail: Passengers can only be removed before the trip starts; the reservation status is ACTIVE.
 
   # ---------------------------------------------------------------- handover
   /checklist-templates:
