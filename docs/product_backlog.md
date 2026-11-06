@@ -6,12 +6,13 @@
 | Accountable (A) | Ahmet Can Vurmaz, Product Owner & Requirements Engineer |
 | Responsible (R) | Ahmet Can Vurmaz (backlog), Abdullah Tecimen (acceptance criteria review for testability) |
 | Consulted (C) | All epic owners |
-| Version | 0.1 · Sprint 1 |
+| Version | 0.2 · Sprint 1 |
 | Related documents | [`problem_definition.md`](problem_definition.md), [`system_vision.md`](system_vision.md), [`openapi.yaml`](openapi.yaml), [`test_plans_and_coverage.md`](test_plans_and_coverage.md) |
 
 ## 1. How to read this backlog
 
 - **Epic (E1–E10)** is a large capability. Epics follow the modules in `system_vision.md` §7.1, and each has one owner.
+- **Feature (F1.1–F10.2)** groups related stories inside an epic. Each feature is a GitHub Issue with the `feature` label; the epic is its parent and its stories are its sub-issues.
 - **User story (US-xx)** is one small, testable feature written as *As a … I want … so that …*. Each story is also opened as a GitHub Issue with the same ID in its title, for example `[US-20] Reserve a vehicle for a trip`.
 - **Acceptance criteria** use *Given / When / Then*. Each criterion becomes at least one test case in `test_plans_and_coverage.md`.
 - **Story points (SP)** are relative effort on the Fibonacci scale 1, 2, 3, 5, 8, 13. A story above 8 SP is split before a sprint starts.
@@ -42,6 +43,35 @@
 | **Total** | | | **52** | **177** | **36** | **11** | **5** |
 
 Sprint 3 (MVP) holds 31 stories / 116 SP; Final holds 21 stories / 61 SP.
+
+### 3.1 Features
+
+The 52 stories are grouped into 22 features.
+
+| Feature | Name | Epic | Owner | Issue | Stories |
+|---|---|---|---|---|---|
+| F1.1 | Authentication and User Accounts | E1 | Ahmet Can Vurmaz | #153 | US-01, US-02, US-06 |
+| F1.2 | Driving Licence Management | E1 | Ahmet Can Vurmaz | #154 | US-03, US-04 |
+| F1.3 | Driver Eligibility | E1 | Ahmet Can Vurmaz | #155 | US-05 |
+| F2.1 | Vehicle Registry | E2 | Ali Eren Kurt | #156 | US-07, US-08, US-09 |
+| F3.1 | Maintenance Rules and Prediction | E3 | Ali Eren Kurt | #157 | US-10, US-11, US-12 |
+| F3.2 | Maintenance Workflow | E3 | Ali Eren Kurt | #158 | US-13, US-14, US-15 |
+| F3.3 | Maintenance Calendar and History | E3 | Ali Eren Kurt | #159 | US-16, US-17 |
+| F4.1 | Vehicle Recommendation | E4 | Ahmet Tarık Orhan | #160 | US-18, US-19 |
+| F4.2 | Reservation Lifecycle | E4 | Ahmet Tarık Orhan | #161 | US-20, US-21, US-22 |
+| F5.1 | Ride Matching and Membership | E5 | Ahmet Tarık Orhan | #162 | US-23, US-24, US-25 |
+| F6.1 | Pickup and Return | E6 | Mehmet Umut Oğuzcan | #163 | US-26, US-27 |
+| F6.2 | Damage Reporting | E6 | Mehmet Umut Oğuzcan | #164 | US-28 |
+| F7.1 | Fuel Tracking | E7 | Abdullah Tecimen | #165 | US-29, US-30, US-31 |
+| F7.2 | Trip Expenses | E7 | Abdullah Tecimen | #166 | US-32 |
+| F8.1 | Fleet Reports | E8 | Deniz Alp Oniki | #167 | US-33, US-34, US-36, US-37 |
+| F8.2 | Carbon Reporting | E8 | Deniz Alp Oniki | #168 | US-35 |
+| F9.1 | Access and Fleet Screens | E9 | Mustafa Düşünceli | #169 | US-38, US-39 |
+| F9.2 | Trip and Ride Screens | E9 | Mustafa Düşünceli | #170 | US-40, US-41 |
+| F9.3 | Handover and Maintenance Screens | E9 | Mustafa Düşünceli | #171 | US-42, US-43 |
+| F9.4 | Fuel and Reporting Screens | E9 | Mustafa Düşünceli | #172 | US-44, US-45 |
+| F10.1 | Delivery Platform | E10 | Deniz Alp Oniki | #173 | US-46, US-47, US-48 |
+| F10.2 | Test Automation and Code Quality | E10 | Abdullah Tecimen | #174 | US-49, US-50, US-51, US-52 |
 
 ## 4. Jury demo journey and the stories behind it
 
