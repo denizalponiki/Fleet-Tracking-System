@@ -4,7 +4,7 @@
 |---|---|
 | Course | SENG 321 Software Engineering · Sprint 2 |
 | Owner | Abdullah Tecimen – Quality Assurance & Test Automation Engineer |
-| Version | 0.5 · Sprint 2 (F3–F5 closed with report and fuel-anomaly test cases; aligned with `openapi.yaml` and `docs/srs/srs.md`) |
+| Version | 0.5 · Sprint 2 (F1, F2, F9, F10 closed; F3–F5 decided with report and fuel-anomaly test cases; aligned with `openapi.yaml`, `docs/srs/srs.md` and ADR-006) |
 | Related documents | [`product_backlog.md`](product_backlog.md), [`openapi.yaml`](openapi.yaml), [`system_vision.md`](system_vision.md), [`raci_matrix.md`](raci_matrix.md), [`srs/srs.md`](srs/srs.md), [`nfr_quality_measures.md`](nfr_quality_measures.md) |
 
 ---
@@ -181,20 +181,22 @@ Rule: same destination, departure within 30 minutes, enough free seats.
 
 ### 6.9 Driver Licences
 
-Rule: a new licence starts with `verified = false`; only a fleet manager verifies it (US-04). Licence data is personal data under KVKK (`system_vision.md` §10).
+Rule: a new licence starts with `verified = false`; only a fleet manager verifies it (US-04). `409 DUPLICATE_LICENSE` applies when the same licence number is submitted again or the driver already has a **non-expired** licence of the same class; a renewal after expiry is allowed and the expired record is kept (`srs.md` REQ-ID-03, #266). Licence data is personal data under KVKK: only the profile owner and `FLEET_MANAGER` may read or add it (`openapi.yaml`, #278).
 
 | ID | User story | Scenario | Expected result | Level |
 |----|-----------|----------|-----------------|-------|
 | TC-LIC-01 | US-03 | Staff member adds a class B licence with number, issue date and a future expiry date to their own profile | `201`; licence returned with `verified = false`; it appears in `GET /drivers/{driverId}/licenses` | I |
-| TC-LIC-02 | US-03 | A licence number that is already registered is added again | `409 DUPLICATE_LICENSE` (see F9) | I |
-| TC-LIC-03 | US-03 | Driver who already has a class B licence adds a second class B licence with a different number | `409 DUPLICATE_LICENSE` (see F9) | I |
+| TC-LIC-02 | US-03 | A licence number that is already registered is added again | `409 DUPLICATE_LICENSE` | I |
+| TC-LIC-03 | US-03 | Driver who already has a **non-expired** class B licence adds a second class B licence with a different number | `409 DUPLICATE_LICENSE` | I |
 | TC-LIC-04 | US-03 | Expiry date is yesterday | `400 VALIDATION_ERROR` with a field error on `expiresAt` | U, I |
 | TC-LIC-05 | US-03 | Expiry date is today (boundary: not in the past) | `201` | U |
 | TC-LIC-06 | US-03 | Expiry date before the issue date | `400 VALIDATION_ERROR` | U, I |
 | TC-LIC-07 | US-03 | Unknown licence class (`A2`) or licence number shorter than 3 or longer than 20 characters | `400 VALIDATION_ERROR` | I |
 | TC-LIC-08 | US-03 | Licence added for a driver ID that does not exist | `404 NOT_FOUND` | I |
-| TC-LIC-09 | US-03 | Staff member adds a licence to another user's profile | `403 FORBIDDEN` (pending F10) | I |
-| TC-LIC-10 | US-03 | Staff member reads another user's licences (`GET /drivers/{driverId}/licenses`); a fleet manager reads the same list | Staff: `403 FORBIDDEN` (pending F10); fleet manager: `200` | I |
+| TC-LIC-09 | US-03 | Staff member adds a licence to another user's profile | `403 FORBIDDEN` | I |
+| TC-LIC-10 | US-03 | Staff member reads another user's licences (`GET /drivers/{driverId}/licenses`); a fleet manager reads the same list | Staff: `403 FORBIDDEN`; fleet manager: `200` | I |
+| TC-LIC-11 | US-03 | Staff member opens another user's driver profile (`GET /drivers/{driverId}`) or checks another driver's eligibility | `403 FORBIDDEN` | I |
+| TC-LIC-12 | US-03 | Driver's class B licence expired yesterday; a renewed class B licence with a new number and a future expiry date is added | `201`; new licence `verified = false`; the expired licence is still in `GET /drivers/{driverId}/licenses` | I |
 
 ### 6.10 Fleet Inventory
 
@@ -228,6 +230,7 @@ Rule: a new vehicle starts as `AVAILABLE`; the plate follows the Turkish format 
 | TC-ALR-04 | US-14 | Filter `level=DUE` combined with `status=OPEN` | Only open alerts of level `DUE` | I |
 | TC-ALR-05 | US-14 | Filter by a vehicle that has no alerts | `200` with an empty `content` list | I |
 | TC-ALR-06 | US-14 | Unknown status value (`status=CLOSED`) | `400 VALIDATION_ERROR` | I |
+| TC-ALR-07 | US-13, US-43 | A return creates a `DUE` alert while a maintenance officer is signed in (notification, ADR-006) | `GET /maintenance/alerts?status=OPEN&size=1` shows `page.totalElements` increased by 1; the header badge and the alert list show it within one polling interval (60 s) | I, E |
 
 ### 6.12 Trip Destinations
 
@@ -240,7 +243,7 @@ Rule: a new vehicle starts as `AVAILABLE`; the plate follows the Turkish format 
 ### 6.13 Reports: Carbon and Utilisation
 
 Rules (`srs.md` REQ-REP-02 and REQ-REP-03, F3 and F4):
-- **Carbon:** kg CO₂ = litres × factor; factors in kg CO₂/L: `GASOLINE` 2.31, `DIESEL` 2.68, `HYBRID` 2.31, `ELECTRIC` 0.0. Ride-sharing saving = passengers (driver excluded) × (trip km / 100) × the vehicle's average consumption (L/100 km) × factor; a vehicle without a full-tank average yet uses 8.0 L/100 km.
+- **Carbon:** kg CO₂ = litres × factor; factors in kg CO₂/L: `GASOLINE` 2.31, `DIESEL` 2.68, `HYBRID` 2.31, `ELECTRIC` 0.0. Ride-sharing saving = passengers (driver excluded) × (actual trip km / 100) × the vehicle's average consumption (L/100 km) × factor; a vehicle without a full-tank average yet uses 8.0 L/100 km. Actual trip km = return odometer − pickup odometer (`tripKm`), not `estimatedKm`, so the value stays consistent with `FleetSummary.savedKm`.
 - **Utilisation:** utilisation % = reserved hours / available hours × 100. Working hours are Monday–Friday 08:00–17:00 (9 h/day); weekends are excluded, public holidays are not. Only the part of a reservation inside working hours counts. `IN_MAINTENANCE` and `OUT_OF_SERVICE` time is removed from available hours.
 - **Time zone:** times are stored in UTC; report periods and working hours are evaluated in Europe/Istanbul (UTC+3, no daylight saving) (`openapi.yaml`, #274).
 
@@ -249,8 +252,8 @@ Rules (`srs.md` REQ-REP-02 and REQ-REP-03, F3 and F4):
 | TC-REP-01 | US-35 | Diesel vehicle, 100 L of fuel in the period | `kgCo2` = 268.0 | U |
 | TC-REP-02 | US-35 | Gasoline vehicle 50 L and hybrid vehicle 50 L | 115.5 kg each | U |
 | TC-REP-03 | US-35 | Electric vehicle in the fleet | `kgCo2` = 0; `emissionFactors` contains all four fuel types | U, I |
-| TC-REP-04 | US-35 | Diesel vehicle with average 7.5 L/100 km; 200 km trip with 2 passengers | `rideSharingSavedKgCo2` = 2 × 2 × 7.5 × 2.68 = 80.4 | U |
-| TC-REP-05 | US-35 | Gasoline vehicle with no full-tank average; 100 km trip with 1 passenger | Default 8.0 L/100 km used: 1 × 1 × 8.0 × 2.31 = 18.48 | U |
+| TC-REP-04 | US-35 | Diesel vehicle with average 7.5 L/100 km; completed trip with pickup 10,000 km and return 10,200 km (estimated 180 km), 2 passengers | `rideSharingSavedKgCo2` = 2 × 2 × 7.5 × 2.68 = 80.4 (uses the actual 200 km, not 180) | U |
+| TC-REP-05 | US-35 | Gasoline vehicle with no full-tank average; completed trip of 100 actual km with 1 passenger | Default 8.0 L/100 km used: 1 × 1 × 8.0 × 2.31 = 18.48 | U |
 | TC-REP-06 | US-35 | Trip with the driver only | Saving 0 | U |
 | TC-REP-07 | US-35 | Several vehicles in the period | `totalKgCo2` equals the sum of the items | I |
 | TC-REP-08 | US-36 | One full week (Monday–Sunday), no maintenance | `availableHours` = 45 (5 × 9) | U |
@@ -261,7 +264,8 @@ Rules (`srs.md` REQ-REP-02 and REQ-REP-03, F3 and F4):
 | TC-REP-13 | US-36 | Reservation stored as 05:00–07:00 UTC (08:00–10:00 Istanbul) | 2 reserved hours (evaluated in Istanbul time, not UTC) | U |
 | TC-REP-14 | US-36 | Reservations covering the whole period, including nights and the weekend | `utilizationPercent` = 100, never above | U |
 | TC-REP-15 | US-36 | Period with `to` before `from` | `400 VALIDATION_ERROR` | I |
-| TC-REP-16 | US-34 – US-36 | Staff member requests any report | `403 FORBIDDEN` | I |
+| TC-REP-16 | US-34 – US-36 | Staff member requests any report, as JSON or CSV | `403 FORBIDDEN` | I |
+| TC-REP-17 | US-37 | Fleet manager requests `GET /reports/cost`, `/reports/carbon` and `/reports/utilization` with `Accept: text/csv` (ADR-006) | `200`, `text/csv`, UTF-8; one header row and one row per vehicle with the same values as the JSON `items`; `Content-Disposition: attachment; filename="fleetsync-<report>-<from>_<to>.csv"` | I |
 
 ### 6.14 Jury Demo Journey (E2E)
 
@@ -278,13 +282,13 @@ Rules (`srs.md` REQ-REP-02 and REQ-REP-03, F3 and F4):
 | User story | Test cases |
 |---|---|
 | US-01, US-02 | TC-AUTH-01 – TC-AUTH-04 |
-| US-03 | TC-LIC-01 – TC-LIC-10 |
+| US-03 | TC-LIC-01 – TC-LIC-12 |
 | US-04, US-05 | TC-ELG-01 – TC-ELG-05 |
 | US-07 | TC-VEH-01 – TC-VEH-08 |
 | US-08 | TC-VEH-09 – TC-VEH-15 |
 | US-11 | TC-MNT-01 – TC-MNT-04 |
 | US-12 | TC-REC-01 – TC-REC-03 |
-| US-13 | TC-MNT-05 – TC-MNT-07, TC-E2E-03 |
+| US-13 | TC-MNT-05 – TC-MNT-07, TC-ALR-07, TC-E2E-03 |
 | US-14 | TC-ALR-01 – TC-ALR-06, TC-E2E-04 |
 | US-15 | TC-MNT-08, TC-MNT-09, TC-E2E-04 |
 | US-18 | TC-LOC-01 – TC-LOC-03, TC-E2E-01 |
@@ -297,7 +301,7 @@ Rules (`srs.md` REQ-REP-02 and REQ-REP-03, F3 and F4):
 | US-35 | TC-REP-01 – TC-REP-07, TC-REP-16, TC-E2E-05 |
 | US-36 | TC-REP-08 – TC-REP-16, TC-E2E-05 |
 | US-45 | TC-E2E-05 |
-| US-38 – US-43 | TC-E2E-01 – TC-E2E-05 |
+| US-38 – US-43 | TC-E2E-01 – TC-E2E-05; US-43 also TC-ALR-07 |
 | US-46 – US-51 | Verified by the CI pipeline itself (build, coverage report, E2E run) |
 
 Since v0.4 every Must story has at least one test case (US-03, US-07, US-08, US-14 and US-18 were added in Sprint 2). Non-functional test cases are defined in [`nfr_quality_measures.md`](nfr_quality_measures.md) §4.
@@ -308,15 +312,15 @@ QA reviewed all acceptance criteria in `product_backlog.md` for testability and 
 
 | # | Finding | Affected | Status |
 |---|---|---|---|
-| F1 | Demo step 5 says the maintenance officer is notified, but `openapi.yaml` has no notification endpoint. Tests assume the notification is the `OPEN` alert in `GET /maintenance/alerts` plus a UI indicator. | US-13, US-43 | Open – contract decision in #245 |
-| F2 | CSV export is listed in `system_vision.md` §7.1 but has no endpoint in `openapi.yaml`. | US-37 | Open – contract decision in #245 |
-| F3 | The CO₂ factor per litre is not defined, so the carbon report cannot be checked against an expected value. **Decision (PO, 2026-11-21):** factors in `srs.md` REQ-REP-02 (gasoline and hybrid 2.31, diesel 2.68, electric 0.0 kg CO₂/L) and the ride-sharing saving formula in §6.13; `HYBRID` and `ELECTRIC` added to `openapi.yaml` in #274. | US-35 | Fixed – TC-REP-01 – TC-REP-07 |
-| F4 | "Available working hours" for utilisation is not defined. **Decision (PO, 2026-11-21):** Monday–Friday 08:00–17:00, weekends excluded, no holiday calendar, only the overlap with working hours counts, maintenance time excluded (`srs.md` REQ-REP-03); Europe/Istanbul time zone (#274). Note: US-36 criterion 1 ("20 of 40 working hours") cannot occur with 9-hour days; TC-REP-09 uses 22.5 of 45. | US-36 | Fixed – TC-REP-08 – TC-REP-15 |
-| F5 | The number of earlier full-tank intervals needed before a fuel average is used is not defined. **Decision (PO, 2026-11-21):** at least 3 completed intervals; baseline is the all-time average excluding flagged intervals; partial fills join the next full-tank interval; `OUTSIDE_RESERVATION` is checked from the first receipt (`srs.md` REQ-FUE-02). | US-30, US-31 | Fixed – TC-FUEL-10 – TC-FUEL-15 |
+| F1 | Demo step 5 says the maintenance officer is notified, but `openapi.yaml` had no notification endpoint. **Decision (ADR-006, #245):** a notification is an `OPEN` maintenance alert; the web app polls `GET /maintenance/alerts?status=OPEN&size=1` every 60 s and shows `page.totalElements` as a badge. | US-13, US-43 | Closed – ADR-006; TC-ALR-07 |
+| F2 | CSV export is listed in `system_vision.md` §7.1 but had no endpoint in `openapi.yaml`. **Decision (ADR-006, #245):** CSV via `Accept: text/csv` on the cost, carbon and utilisation reports; no new paths. | US-37 | Closed – ADR-006; TC-REP-17 |
+| F3 | The CO₂ factor per litre is not defined, so the carbon report cannot be checked against an expected value. **In SRS:** factors in `srs.md` REQ-REP-02 (gasoline and hybrid 2.31, diesel 2.68, electric 0.0 kg CO₂/L); `HYBRID` and `ELECTRIC` in `openapi.yaml` (#274). **PO decision 2026-11-21, not yet in SRS:** ride-sharing saving = passengers × (actual trip km / 100) × average L/100 km × factor, default 8.0 L/100 km. | US-35 | Decided – SRS update pending; TC-REP-01 – TC-REP-07 |
+| F4 | "Available working hours" for utilisation is not defined. **In SRS:** Monday–Friday 08:00–17:00, maintenance and out-of-service time excluded (`srs.md` REQ-REP-03); Europe/Istanbul time zone (`openapi.yaml`, #274). **PO decision 2026-11-21, not yet in SRS:** only the overlap with working hours counts; weekends excluded, no public-holiday calendar. Note: US-36 criterion 1 ("20 of 40 working hours") cannot occur with 9-hour days; TC-REP-09 uses 22.5 of 45. | US-36 | Decided – SRS update pending; TC-REP-08 – TC-REP-15 |
+| F5 | The number of earlier full-tank intervals needed before a fuel average is used is not defined. **In SRS:** at least 3 completed intervals (`srs.md` REQ-FUE-02); baseline excludes flagged intervals (`openapi.yaml` `baselineLPer100Km`, #278). **PO decision 2026-11-21, not yet in SRS:** flagged intervals are excluded from the baseline; partial fills join the next full-tank interval; `OUTSIDE_RESERVATION` is checked from the first receipt. | US-30, US-31 | Decided – SRS update pending; TC-FUEL-10 – TC-FUEL-15 |
 | F6 | `POST /reservations` returns several error codes under the same HTTP status: 409 for vehicle problems (`RESERVATION_CONFLICT`, `VEHICLE_MAINTENANCE_DUE`, `VEHICLE_UNAVAILABLE`) and 422 for driver or request problems (`LICENSE_EXPIRED`, `LICENSE_CLASS_MISMATCH`, `SEAT_CAPACITY_EXCEEDED`). Tests check the `code` field, not only the HTTP status. | US-20 | Applied in this plan |
 | F8 | The revised `openapi.yaml` (2026-11-02) returns `409 VEHICLE_MAINTENANCE_DUE` when a blocked vehicle is reserved; test plan v0.2 and `product_backlog.md` US-20 criterion 4 still said 422. Reported by the Backend Engineer in `carpool_reservation_api.md`.    Test plan fixed in v0.3 (#64); backlog fixed by the Product Owner (#66). | US-20 | Fixed | 
-| F9 | The duplicate-licence rule differs between documents: `product_backlog.md` US-03 criterion 2 rejects a **licence number** that is already registered; `openapi.yaml` rejects a second licence of the **same class** for the driver; `srs.md` REQ-ID-03 says "number/class for the same driver". TC-LIC-02 and TC-LIC-03 cover both readings until one is chosen. | US-03 | Open – decision by PO, contract update by Architect |
-| F10 | `POST /drivers/{driverId}/licenses`, `GET /drivers/{driverId}` and `GET /drivers/{driverId}/licenses` define no `403` and no ownership rule, so any signed-in user could add to or read another driver's licences. This conflicts with the KVKK constraint in `system_vision.md` §10 (licence data only for the owner and fleet managers) and NFR-SEC-05. TC-LIC-09 and TC-LIC-10 assume owner or `FLEET_MANAGER` only. | US-03, US-04 | Open – decision by PO and Architect |
+| F9 | The duplicate-licence rule differed between `product_backlog.md` (same number), `openapi.yaml` (same class) and `srs.md` (number/class). **Resolved (`srs.md` REQ-ID-03, #266):** 409 for the same number or a non-expired licence of the same class; renewal after expiry is allowed. | US-03 | Closed – TC-LIC-02, TC-LIC-03, TC-LIC-12 |
+| F10 | The licence endpoints defined no `403` and no ownership rule, which conflicted with the KVKK constraint in `system_vision.md` §10 and NFR-SEC-05. **Resolved (#278):** profile, licence list, licence creation and eligibility are allowed only for the owner or `FLEET_MANAGER`, with `403 FORBIDDEN` otherwise. | US-03, US-04, US-05 | Closed – TC-LIC-09 – TC-LIC-11 |
 | F7 | Test plan v0.1 used `MAINTENANCE` as a vehicle status and generic HTTP names; aligned with `IN_MAINTENANCE` and the API error codes in v0.2. | Test plan | Fixed |
 
 All other acceptance criteria are measurable and have explicit boundary values.
@@ -361,6 +365,6 @@ Before each sprint submission, QA checks:
 
 ## 13. Planned Updates
 
-- **Sprint 2:** Test cases for the remaining Must stories (done in v0.4); non-functional quality measures (`nfr_quality_measures.md` §4); F3–F5 closed in v0.5; close F1 and F2 after #245, F9 and F10 after the PO decision.
+- **Sprint 2:** Test cases for the remaining Must stories (done in v0.4); non-functional quality measures (`nfr_quality_measures.md` §4); F1, F2, F9 and F10 closed in v0.5; F3–F5 decided, to be marked closed when the SRS contains the remaining PO decisions.
 - **Sprint 3:** Coverage report from the CI pipeline; unit and integration tests implemented.
 - **Final:** Integration and E2E test report; SonarQube summary.
