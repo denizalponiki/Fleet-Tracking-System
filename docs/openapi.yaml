@@ -1120,6 +1120,12 @@ paths:
       operationId: listMaintenanceAlerts
       tags: [maintenance]
       summary: List maintenance alerts
+      description: |
+        This list is also the in-app notification channel (ADR-006, finding F1). There is no separate
+        notification endpoint and no email in release 1. The web application polls
+        `GET /maintenance/alerts?status=OPEN&size=1` every 60 seconds while a MAINTENANCE_OFFICER or
+        FLEET_MANAGER is signed in, shows `page.totalElements` as the alert badge and the list on the
+        maintenance screen. An alert raised on return is therefore visible within one polling interval.
       parameters:
         - name: status
           in: query
@@ -1384,7 +1390,7 @@ paths:
       operationId: getCostReport
       tags: [reports]
       summary: Fuel, expense and maintenance cost per vehicle
-      description: 'Requires role: FLEET_MANAGER. Returns CSV with `Accept: text/csv`.'
+      description: 'Requires role: FLEET_MANAGER. Returns CSV with `Accept: text/csv` (ADR-006, US-37).'
       parameters:
         - $ref: '#/components/parameters/FromDate'
         - $ref: '#/components/parameters/ToDate'
@@ -1392,6 +1398,8 @@ paths:
       responses:
         '200':
           description: Cost report
+          headers:
+            Content-Disposition: { $ref: '#/components/headers/CsvContentDisposition' }
           content:
             application/json:
               schema: { $ref: '#/components/schemas/CostReport' }
@@ -1409,7 +1417,7 @@ paths:
       operationId: getCarbonReport
       tags: [reports]
       summary: Carbon footprint per vehicle and ride-sharing savings
-      description: 'Requires role: FLEET_MANAGER. kg CO2 = litres × emission factor (gasoline 2.31, diesel 2.68).'
+      description: 'Requires role: FLEET_MANAGER. kg CO2 = litres × emission factor (gasoline 2.31, diesel 2.68). Returns CSV with `Accept: text/csv` (ADR-006, US-37).'
       parameters:
         - $ref: '#/components/parameters/FromDate'
         - $ref: '#/components/parameters/ToDate'
@@ -1417,9 +1425,16 @@ paths:
       responses:
         '200':
           description: Carbon report
+          headers:
+            Content-Disposition: { $ref: '#/components/headers/CsvContentDisposition' }
           content:
             application/json:
               schema: { $ref: '#/components/schemas/CarbonReport' }
+            text/csv:
+              schema: { type: string }
+              example: |
+                plate,fuelType,liters,km,kgCo2,gCo2PerKm
+                06 FS 102,DIESEL,48.50,570,129.98,228.04
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -1429,7 +1444,7 @@ paths:
       operationId: getUtilizationReport
       tags: [reports]
       summary: Utilisation rate per vehicle
-      description: 'Requires role: FLEET_MANAGER. Utilisation = reserved hours / available working hours (maintenance and out-of-service time excluded).'
+      description: 'Requires role: FLEET_MANAGER. Utilisation = reserved hours / available working hours (maintenance and out-of-service time excluded). Returns CSV with `Accept: text/csv` (ADR-006, US-37).'
       parameters:
         - $ref: '#/components/parameters/FromDate'
         - $ref: '#/components/parameters/ToDate'
@@ -1437,9 +1452,16 @@ paths:
       responses:
         '200':
           description: Utilisation report
+          headers:
+            Content-Disposition: { $ref: '#/components/headers/CsvContentDisposition' }
           content:
             application/json:
               schema: { $ref: '#/components/schemas/UtilizationReport' }
+            text/csv:
+              schema: { type: string }
+              example: |
+                plate,reservedHours,availableHours,utilizationPercent
+                06 FS 102,35.0,189.0,18.5
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -1505,6 +1527,12 @@ components:
       name: to
       in: query
       schema: { type: string, format: date }
+
+  headers:
+    CsvContentDisposition:
+      description: Sent only with a `text/csv` response so the browser downloads the file.
+      schema: { type: string }
+      example: attachment; filename="fleetsync-cost-2026-11-01_2026-11-30.csv"
 
   responses:
     BadRequest:
