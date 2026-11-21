@@ -1,0 +1,66 @@
+[project]
+name = "fleetsync-backend"
+version = "0.1.0"
+description = "FleetSync REST API (modular monolith, see docs/adr/ADR-001 and ADR-002)"
+license = "MIT"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "fastapi>=0.115,<1",
+    "uvicorn[standard]>=0.32,<1",
+    "pydantic>=2.9,<3",
+    "pydantic-settings>=2.6,<3",
+    "sqlalchemy>=2.0.36,<2.1",
+    "psycopg[binary]>=3.2,<4",
+    "alembic>=1.14,<2",
+    "pyjwt>=2.10,<3",
+    "argon2-cffi>=23.1",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-cov>=6.0",
+    "httpx>=0.28",
+    "import-linter>=2.1",
+    "ruff>=0.8",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "--cov=app --cov-report=term-missing"
+
+[tool.coverage.report]
+fail_under = 50
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+ignore = ["E501"]  # line length is left to `ruff format`
+
+# ADR-002 rule 3: modules depend downwards only. A module on a higher line may import a
+# module on a lower line, never the reverse; modules separated by "|" must not import each other.
+[tool.importlinter]
+root_package = "app"
+
+[[tool.importlinter.contracts]]
+name = "Module dependency direction (ADR-002)"
+type = "layers"
+layers = [
+    "app.main",
+    "app.modules.reporting",
+    "app.modules.carpool | app.modules.handover | app.modules.fuel",
+    "app.modules.reservation",
+    "app.modules.maintenance | app.modules.identity",
+    "app.modules.vehicle",
+    "app.shared",
+]
+
+[[tool.importlinter.contracts]]
+name = "Shared code does not depend on modules"
+type = "forbidden"
+source_modules = ["app.shared"]
+forbidden_modules = ["app.modules"]

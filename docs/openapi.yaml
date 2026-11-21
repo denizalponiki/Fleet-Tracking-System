@@ -11,6 +11,8 @@ info:
     **Conventions**
     - Every request requires `Authorization: Bearer <JWT>`, except `POST /auth/login`.
     - Timestamps are ISO 8601 with offset (`2026-11-12T08:00:00+03:00`); dates are `YYYY-MM-DD`.
+    - Business time is **Europe/Istanbul** (UTC+3, no daylight saving): report periods (`from`, `to`) and
+      working hours in reports are evaluated in this time zone.
     - Identifiers are UUIDs.
     - Errors use RFC 9457 `application/problem+json`; clients branch on the `code` field.
       400 means invalid input, 409 means a state or scheduling conflict, 422 means a business rule violation.
@@ -165,6 +167,7 @@ paths:
       operationId: getDriverProfile
       tags: [drivers]
       summary: Return a driver profile with its licences
+      description: 'Allowed for the profile owner or FLEET_MANAGER (licence data is personal data under KVKK, NFR-SEC-05).'
       responses:
         '200':
           description: Driver profile
@@ -172,6 +175,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/DriverProfile' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
     put:
       operationId: updateDriverProfile
@@ -201,6 +205,7 @@ paths:
       operationId: listDriverLicenses
       tags: [drivers]
       summary: List a driver's licences
+      description: 'Allowed for the profile owner or FLEET_MANAGER (licence data is personal data under KVKK, NFR-SEC-05).'
       responses:
         '200':
           description: Licence list
@@ -210,12 +215,15 @@ paths:
                 type: array
                 items: { $ref: '#/components/schemas/License' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
     post:
       operationId: addDriverLicense
       tags: [drivers]
       summary: Add a licence to a driver
-      description: A new licence starts with `verified=false`; a FLEET_MANAGER verifies it after seeing the document.
+      description: |
+        Allowed for the profile owner or FLEET_MANAGER. A new licence starts with `verified=false`;
+        a FLEET_MANAGER verifies it after seeing the document.
       requestBody:
         required: true
         content:
@@ -229,6 +237,7 @@ paths:
               schema: { $ref: '#/components/schemas/License' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
         '409':
           description: A licence of this class is already registered
@@ -271,7 +280,9 @@ paths:
       operationId: checkDriverEligibility
       tags: [drivers]
       summary: Check whether a driver may drive a given vehicle until a given time
-      description: The licence class must match the vehicle and the licence must still be valid when the trip ends.
+      description: |
+        Allowed for the driver themself or FLEET_MANAGER. The licence class must match the vehicle and the
+        licence must still be valid when the trip ends. The reservation module calls the same check internally.
       parameters:
         - name: vehicleId
           in: query
@@ -307,6 +318,7 @@ paths:
                         message: The class B licence expires on 2026-11-10; the trip ends on 2026-11-13.
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
 
   # ---------------------------------------------------------------- locations
@@ -1120,6 +1132,12 @@ paths:
       operationId: listMaintenanceAlerts
       tags: [maintenance]
       summary: List maintenance alerts
+      description: |
+        This list is also the in-app notification channel (ADR-006, finding F1). There is no separate
+        notification endpoint and no email in release 1. The web application polls
+        `GET /maintenance/alerts?status=OPEN&size=1` every 60 seconds while a MAINTENANCE_OFFICER or
+        FLEET_MANAGER is signed in, shows `page.totalElements` as the alert badge and the list on the
+        maintenance screen. An alert raised on return is therefore visible within one polling interval.
       parameters:
         - name: status
           in: query
@@ -1384,7 +1402,7 @@ paths:
       operationId: getCostReport
       tags: [reports]
       summary: Fuel, expense and maintenance cost per vehicle
-      description: 'Requires role: FLEET_MANAGER. Returns CSV with `Accept: text/csv`.'
+      description: 'Requires role: FLEET_MANAGER. Returns CSV with `Accept: text/csv` (ADR-006, US-37).'
       parameters:
         - $ref: '#/components/parameters/FromDate'
         - $ref: '#/components/parameters/ToDate'
@@ -1392,6 +1410,8 @@ paths:
       responses:
         '200':
           description: Cost report
+          headers:
+            Content-Disposition: { $ref: '#/components/headers/CsvContentDisposition' }
           content:
             application/json:
               schema: { $ref: '#/components/schemas/CostReport' }
@@ -1409,7 +1429,7 @@ paths:
       operationId: getCarbonReport
       tags: [reports]
       summary: Carbon footprint per vehicle and ride-sharing savings
-      description: 'Requires role: FLEET_MANAGER. kg CO2 = litres × emission factor (gasoline 2.31, diesel 2.68).'
+      description: 'Requires role: FLEET_MANAGER. kg CO2 = litres × emission factor (gasoline 2.31, diesel 2.68). Returns CSV with `Accept: text/csv` (ADR-006, US-37).'
       parameters:
         - $ref: '#/components/parameters/FromDate'
         - $ref: '#/components/parameters/ToDate'
@@ -1417,9 +1437,16 @@ paths:
       responses:
         '200':
           description: Carbon report
+          headers:
+            Content-Disposition: { $ref: '#/components/headers/CsvContentDisposition' }
           content:
             application/json:
               schema: { $ref: '#/components/schemas/CarbonReport' }
+            text/csv:
+              schema: { type: string }
+              example: |
+                plate,fuelType,liters,km,kgCo2,gCo2PerKm
+                06 FS 102,DIESEL,48.50,570,129.98,228.04
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -1429,7 +1456,7 @@ paths:
       operationId: getUtilizationReport
       tags: [reports]
       summary: Utilisation rate per vehicle
-      description: 'Requires role: FLEET_MANAGER. Utilisation = reserved hours / available working hours (maintenance and out-of-service time excluded).'
+      description: 'Requires role: FLEET_MANAGER. Utilisation = reserved hours / available working hours (maintenance and out-of-service time excluded). Returns CSV with `Accept: text/csv` (ADR-006, US-37).'
       parameters:
         - $ref: '#/components/parameters/FromDate'
         - $ref: '#/components/parameters/ToDate'
@@ -1437,9 +1464,16 @@ paths:
       responses:
         '200':
           description: Utilisation report
+          headers:
+            Content-Disposition: { $ref: '#/components/headers/CsvContentDisposition' }
           content:
             application/json:
               schema: { $ref: '#/components/schemas/UtilizationReport' }
+            text/csv:
+              schema: { type: string }
+              example: |
+                plate,reservedHours,availableHours,utilizationPercent
+                06 FS 102,35.0,189.0,18.5
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -1505,6 +1539,12 @@ components:
       name: to
       in: query
       schema: { type: string, format: date }
+
+  headers:
+    CsvContentDisposition:
+      description: Sent only with a `text/csv` response so the browser downloads the file.
+      schema: { type: string }
+      example: attachment; filename="fleetsync-cost-2026-11-01_2026-11-30.csv"
 
   responses:
     BadRequest:
@@ -2247,7 +2287,11 @@ components:
         totalLiters: { type: number }
         totalKm: { type: integer }
         averageLPer100Km: { type: [number, 'null'] }
-        baselineLPer100Km: { type: [number, 'null'], description: The vehicle's all-time average }
+        baselineLPer100Km:
+          type: [number, 'null']
+          description: >-
+            The vehicle's all-time average over completed full-tank intervals, excluding intervals flagged
+            CONSUMPTION_SPIKE; null until at least 3 intervals are completed
         segments:
           type: array
           description: Measurements between two consecutive full tanks
@@ -2345,6 +2389,8 @@ components:
           properties:
             GASOLINE: { type: number, examples: [2.31] }
             DIESEL: { type: number, examples: [2.68] }
+            HYBRID: { type: number, description: Same factor as gasoline per litre, examples: [2.31] }
+            ELECTRIC: { type: number, description: No fuel is burned; electric vehicles report 0, examples: [0.0] }
         rideSharingSavedKgCo2:
           type: number
           description: Estimated emissions avoided through ride sharing
@@ -2366,7 +2412,10 @@ components:
       required: [period, workingHoursPerDay, fleetUtilizationPercent, items]
       properties:
         period: { $ref: '#/components/schemas/ReportPeriod' }
-        workingHoursPerDay: { type: number, examples: [9] }
+        workingHoursPerDay:
+          type: number
+          description: Working hours per working day, evaluated in the Europe/Istanbul time zone
+          examples: [9]
         fleetUtilizationPercent: { type: number }
         items:
           type: array
