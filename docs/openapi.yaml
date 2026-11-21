@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: FleetSync API
-  version: 0.1.0
+  version: 1.0.0
   summary: Smart fleet management, periodic maintenance and carpooling platform
   description: |
     REST API contract for FleetSync (API-first). This file is the single source of truth:
@@ -21,6 +21,9 @@ info:
     **Roles:** `STAFF` (staff member / driver), `FLEET_MANAGER`, `MAINTENANCE_OFFICER`.
 
     **Change policy:** every change to this file goes through a pull request and needs the Lead Architect's approval (CODEOWNERS).
+    Version 1.0.0 is the contract frozen at the end of Sprint 2 (tag `openapi-v1.0`). From here on, versions follow
+    semantic versioning: wording and example fixes raise the patch (`1.0.1`), backward-compatible additions such as a new
+    optional field or operation raise the minor (`1.1.0`), and removing or renaming anything clients use raises the major (`2.0.0`).
   license:
     name: MIT
     identifier: MIT
