@@ -6,7 +6,7 @@
 | Accountable (A) | Ahmet Can Vurmaz, Product Owner & Requirements Engineer |
 | Responsible (R) | Ahmet Can Vurmaz (backlog), Abdullah Tecimen (acceptance criteria review for testability) |
 | Consulted (C) | All epic owners |
-| Version | 0.2 · Sprint 1 |
+| Version | 0.3 · Sprint 2 (refinied) |
 | Related documents | [`problem_definition.md`](problem_definition.md), [`system_vision.md`](system_vision.md), [`openapi.yaml`](openapi.yaml), [`test_plans_and_coverage.md`](test_plans_and_coverage.md) |
 
 ## 1. How to read this backlog
@@ -243,7 +243,7 @@ Trace: §8 Automatic maintenance status
 | ID | Story | SP | Priority | Depends on | Owner | Target |
 |---|---|---|---|---|---|---|
 | US-10 | Configure maintenance rule intervals | 2 | Should | US-07 | Ali Eren Kurt | Final |
-| US-11 | Calculate remaining km and days for each rule | 5 | Must | US-10 | Ali Eren Kurt | Sprint 3 |
+| US-11 | Calculate remaining km and days for each rule | 5 | Must | US-07 | Ali Eren Kurt | Sprint 3 |
 | US-12 | Block vehicles whose maintenance is too close for a trip | 5 | Must | US-11 | Ali Eren Kurt | Sprint 3 |
 | US-13 | Move a vehicle to maintenance automatically on return | 5 | Must | US-11, US-27 | Ali Eren Kurt | Sprint 3 |
 | US-14 | List maintenance alerts | 2 | Must | US-13 | Ali Eren Kurt | Sprint 3 |
@@ -288,7 +288,7 @@ Acceptance criteria:
 
 1. **Given** a vehicle with 350 km left and a 300 km trip, **when** it is evaluated for the trip, **then** it is blocked, because 350 < 300 + 100.
 2. **Given** a vehicle with 400 km left and a 300 km trip, **when** it is evaluated for the trip, **then** it is not blocked (400 is not below 400).
-3. **Given** a rule whose due date falls before the trip ends, **when** the vehicle is evaluated, **then** it is blocked with reason `MAINTENANCE_DUE_SOON`.
+3. **Given** a rule whose due date falls before the trip ends, **when** the vehicle is evaluated, **then** it is blocked with reason `MAINTENANCE_DUE`.`
 
 SP: 5 · Priority: Must · Depends on: US-11 · Owner: Ali Eren Kurt · Target: Sprint 3  
 API: `GET /vehicles/recommendations (used by)`  
@@ -943,10 +943,12 @@ These items are recorded so that the scope is clear. They follow `system_vision.
 
 SP measures relative effort, not hours. Role duties that are not stories (sprint planning, architecture documents, reviews, test planning) are tracked as separate GitHub Issues.
 
-## 8. Open questions for the Product Owner
+## 8. Resolved Product Owner Decisions (Sprint 2)
 
-- **Notifications (demo step 5):** `openapi.yaml` has no notification endpoint. This backlog assumes the maintenance officer is notified through the open-alert list and an indicator in the UI (US-13, US-43). Confirm, or add an endpoint.
-- **CSV export (US-37):** `system_vision.md` §7.1 lists CSV export, but `openapi.yaml` has no export endpoint yet.
-- **Carbon factors (US-35):** which CO₂ factor per litre is used for petrol, diesel and LPG, and from which source?
-- **Working hours (US-36):** what counts as available working hours for utilisation (for example weekdays 08:00–18:00)?
-- **Fuel anomaly baseline (US-31):** how many earlier full-tank intervals are needed before a vehicle's average is trusted?
+| Finding | Topic | Decision | Affected |
+|---|---|---|---|
+| **F1** | Notifications (Demo step 5) | Confirmed: No separate notification endpoint in Release 1. Maintenance officers are notified via `GET /maintenance/alerts?status=OPEN` and a UI badge indicator. | US-13, US-43 |
+| **F2** | CSV Export (US-37) | Handled via content negotiation (`Accept: text/csv`) on `GET /reports/cost` (and aligned with Architect for carbon/utilisation in `openapi.yaml` v1.0.0). | US-37 |
+| **F3** | CO₂ Emission Factors (US-35) | Standard tailpipe factors (kg CO₂ per litre): `GASOLINE = 2.31`, `DIESEL = 2.68`, `HYBRID = 2.31` (for fuel consumed), `ELECTRIC = 0.00` (Source: EPA / DEFRA). | US-35 |
+| **F4** | Available Working Hours (US-36) | Weekdays (Monday–Friday), 08:00–17:00 (**9 working hours/day**), excluding hours where the vehicle status is `IN_MAINTENANCE` or `OUT_OF_SERVICE`. | US-36 |
+| **F5** | Fuel Anomaly Baseline (US-31) | A vehicle requires at least **3 completed full-tank intervals** to establish a trusted baseline average before `CONSUMPTION_SPIKE` (>25% deviation) anomalies are flagged. | US-31 |
