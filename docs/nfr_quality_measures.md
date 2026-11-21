@@ -39,7 +39,7 @@ Each requirement uses: **ID**, **statement**, **measurable pass criteria**, **ve
 
 **Pass criteria:** `.env.example` contains variable names and non-secret examples; real `.env` files and credentials are Git-ignored; `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, database URL/configuration and `JWT_SECRET` are configurable. The application fails clearly if required settings are absent. Secrets must not be written to normal application logs.
 
-**Verification:** Inspect source, Compose configuration and `.gitignore`; start with missing required settings and confirm an explicit startup error; check that actual secrets are absent from tracked files. **Target:** Sprint 3. **Open decision:** Deployment diagram DD-3 (`JWT_SECRET` example) — update `.env.example` when API configuration is implemented.
+**Verification:** Inspect source, Compose configuration and `.gitignore`; start with missing required settings and confirm an explicit startup error; check that actual secrets are absent from tracked files. **Target:** Sprint 3. **Decision (DD-3, Architect, 2026-11-21):** the API reads `DATABASE_URL`, `JWT_SECRET` (required, no default; the API does not start without it) and `JWT_EXPIRES_SECONDS` (default `3600`, ADR-005); `JWT_ALGORITHM` (`HS256`) and `JWT_ISSUER` (`fleetsync`) have safe defaults. The `db` service keeps `POSTGRES_DB`, `POSTGRES_USER` and `POSTGRES_PASSWORD`. These are the names used in `backend/app/shared/config.py`. `JWT_SECRET` and `DATABASE_URL` are added to `.env.example` together with the `api` service in Compose (DD-1).
 
 ### NFR-OPS-03 · Database persistence and isolation
 
@@ -85,9 +85,9 @@ Each requirement uses: **ID**, **statement**, **measurable pass criteria**, **ve
 
 **Statement:** The demo shall use a documented network exposure and transport model appropriate to its environment.
 
-**Proposed decision:** For **localhost-only** development and jury demonstration, HTTP on `http://localhost:8080` may be used if the demo does not transmit real personal data. Any **publicly exposed** environment must use HTTPS with a valid certificate, with the API kept behind the reverse proxy and database port unexposed.
+**Decision (DD-2, approved by the Architect, 2026-11-21):** For **localhost-only** development and jury demonstration, HTTP on `http://localhost:8080` is used; the demo uses only invented seed data (US-47), so no real personal data is transmitted. Any **publicly exposed** environment must use HTTPS with a valid certificate, with the API kept behind the reverse proxy and database port unexposed. A self-signed certificate for the demo is not used: it adds browser warnings without protecting real data.
 
-**Verification:** Confirm base URL, exposed ports and HTTPS configuration against the chosen demo environment and updated deployment diagram. **Target:** Architecture decision during Sprint 2; deployment implementation in Sprint 3. **Open decision:** Deployment diagram DD-2 — Ali Eren Kurt to confirm before marking this NFR approved.
+**Verification:** Confirm base URL, exposed ports and HTTPS configuration against the chosen demo environment and updated deployment diagram. **Target:** Architecture decision in Sprint 2 (done); deployment implementation in Sprint 3.
 
 ## 3. Operational traceability
 
@@ -127,7 +127,7 @@ Each requirement uses: **ID**, **statement**, **measurable pass criteria**, **ve
 
 **Statement:** List endpoints shall not return unbounded result sets.
 
-**Pass criteria:** The list endpoints that use the `Page` and `Size` parameters in `openapi.yaml` (currently `GET /users`, `GET /vehicles`, `GET /reservations`, `GET /maintenance/alerts`) return at most 20 items by default; `size` above 100 is rejected with `400 VALIDATION_ERROR`. **Open point for the Architect:** `GET /vehicles/{vehicleId}/fuel-receipts`, `GET /fuel/anomalies` and `GET /expenses` also grow with usage but are not paginated yet.
+**Pass criteria:** The list endpoints that use the `Page` and `Size` parameters in `openapi.yaml` (currently `GET /users`, `GET /vehicles`, `GET /reservations`, `GET /maintenance/alerts`) return at most 20 items by default; `size` above 100 is rejected with `400 VALIDATION_ERROR`. **Decision (Architect, 2026-11-21):** `GET /vehicles/{vehicleId}/fuel-receipts`, `GET /fuel/anomalies` and `GET /expenses` stay unpaginated in release 1 and are bounded by their period instead: all three already accept `from` / `to`, and the web application always sends a period (default: the last 3 months). At the expected scale (`system_vision.md` A6: tens of vehicles) this is a few hundred rows at most. Adding pagination later changes the response from an array to a page object, which is a breaking change (`openapi.yaml` 2.0.0); this is accepted for release 1. Pass criterion for these three: with demo seed data and a 3-month period, the response stays within the PERF-01 read target.
 
 **Verification:** Integration test per list endpoint with `size=101` and with no parameters *(new: TC-NFR-PERF-02)*. **Target:** Sprint 3.
 
@@ -312,14 +312,14 @@ These requirements turn `system_vision.md` §10 (Security, KVKK) and ADR-005 int
 
 | Item | Requested owner | Status |
 |---|---|---|
-| Review operational acceptance targets for feasibility | Ali Eren Kurt | Open |
-| Approve localhost HTTP vs public HTTPS rule (DD-2) | Ali Eren Kurt + Deniz Alp Oniki | Open |
-| Confirm API/JWT environment-variable names (DD-3) | Ali Eren Kurt + Deniz Alp Oniki | Open |
+| Review operational acceptance targets for feasibility | Ali Eren Kurt | Done — feasible for Sprint 3 / Final as targeted. OPS-05 readiness check is `GET /api/v1/health` (200 when the database answers, 503 otherwise), already in the backend skeleton (#249). |
+| Approve localhost HTTP vs public HTTPS rule (DD-2) | Ali Eren Kurt + Deniz Alp Oniki | Approved by the Architect — HTTP on localhost for the demo, HTTPS for any public environment (NFR-OPS-08) |
+| Confirm API/JWT environment-variable names (DD-3) | Ali Eren Kurt + Deniz Alp Oniki | Confirmed by the Architect — names in NFR-OPS-02; `.env.example` updated with DD-1 |
 | Review backup/restore method (DD-4) | Deniz Alp Oniki + Abdullah Tecimen | Open |
 | Add measurable QA metrics (section 4) | Abdullah Tecimen | Drafted — in review |
-| Approve QA numeric targets (PERF-01 load profile, 70% module coverage, WCAG 2.1 AA) | Ali Eren Kurt + Ahmet Can Vurmaz | Open |
+| Approve QA numeric targets (PERF-01 load profile, 70% module coverage, WCAG 2.1 AA) | Ali Eren Kurt + Ahmet Can Vurmaz | Approved by the Architect — 20 virtual users fit assumption A6; 70% for the business-rule modules is a team target reported per module, the CI gate stays at 50%; WCAG 2.1 AA for the demo screens. PO approval pending. |
 | Confirm performance targets are realistic for the reservation and recommendation queries | Ahmet Tarık Orhan | Open |
-| Decide pagination for fuel receipts, anomalies and expenses (PERF-02) | Ali Eren Kurt | Open |
+| Decide pagination for fuel receipts, anomalies and expenses (PERF-02) | Ali Eren Kurt | Decided — no pagination in release 1; bounded by `from` / `to` (NFR-PERF-02) |
 | Check Figma palette contrast and status text (ACC-01, ACC-02) | Mustafa Düşünceli + Abdullah Tecimen | Open |
 | Add the *(new)* test case IDs from section 4 to the test plan | Abdullah Tecimen | Open |
 | Reconcile with SRS and traceability | Ahmet Can Vurmaz | Open |

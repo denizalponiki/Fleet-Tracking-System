@@ -73,6 +73,6 @@ The only workflow in the repository today is `.github/workflows/openapi-lint.yml
 | # | Point | Owner | Status |
 |---|---|---|---|
 | DD-1 | Add `api` and `web` services, health checks and the `fleetsync_net` network to `docker-compose.yml` | Deniz Alp Oniki | Open (Sprint 3) |
-| DD-2 | Decide HTTPS for the demo (self-signed certificate or HTTP on localhost) | Deniz Alp Oniki, Ali Eren Kurt | Open |
-| DD-3 | Add `JWT_SECRET` to `.env.example` | Deniz Alp Oniki | Open |
+| DD-2 | Decide HTTPS for the demo (self-signed certificate or HTTP on localhost) | Deniz Alp Oniki, Ali Eren Kurt | Decided: HTTP on `localhost:8080` for the demo, HTTPS for any public environment (NFR-OPS-08) |
+| DD-3 | Environment-variable names; add `JWT_SECRET` and `DATABASE_URL` to `.env.example` | Deniz Alp Oniki | Names confirmed (NFR-OPS-02); `.env.example` update with DD-1 in Sprint 3 |
 | DD-4 | Backup and recovery of `postgres_data` (`pg_dump`) is described in the NFR document | Deniz Alp Oniki | Open |
