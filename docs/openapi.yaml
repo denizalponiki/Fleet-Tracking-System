@@ -11,6 +11,8 @@ info:
     **Conventions**
     - Every request requires `Authorization: Bearer <JWT>`, except `POST /auth/login`.
     - Timestamps are ISO 8601 with offset (`2026-11-12T08:00:00+03:00`); dates are `YYYY-MM-DD`.
+    - Business time is **Europe/Istanbul** (UTC+3, no daylight saving): report periods (`from`, `to`) and
+      working hours in reports are evaluated in this time zone.
     - Identifiers are UUIDs.
     - Errors use RFC 9457 `application/problem+json`; clients branch on the `code` field.
       400 means invalid input, 409 means a state or scheduling conflict, 422 means a business rule violation.
@@ -2345,6 +2347,8 @@ components:
           properties:
             GASOLINE: { type: number, examples: [2.31] }
             DIESEL: { type: number, examples: [2.68] }
+            HYBRID: { type: number, description: Same factor as gasoline per litre, examples: [2.31] }
+            ELECTRIC: { type: number, description: No fuel is burned; electric vehicles report 0, examples: [0.0] }
         rideSharingSavedKgCo2:
           type: number
           description: Estimated emissions avoided through ride sharing
@@ -2366,7 +2370,10 @@ components:
       required: [period, workingHoursPerDay, fleetUtilizationPercent, items]
       properties:
         period: { $ref: '#/components/schemas/ReportPeriod' }
-        workingHoursPerDay: { type: number, examples: [9] }
+        workingHoursPerDay:
+          type: number
+          description: Working hours per working day, evaluated in the Europe/Istanbul time zone
+          examples: [9]
         fleetUtilizationPercent: { type: number }
         items:
           type: array
