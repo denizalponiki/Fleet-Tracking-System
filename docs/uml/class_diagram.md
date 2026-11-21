@@ -131,7 +131,7 @@ classDiagram
         <<service>>
         +evaluateVehicle(vehicle) VehicleMaintenanceStatus
         +isBlockedForTrip(vehicle, estimatedKm, endAt) List~Reason~
-        +onTripCompleted(event) List~MaintenanceAlert~
+        +onTripCompleted(event) TripEvaluationResult
         +recordService(record) void
     }
     class EvaluationStatus {
@@ -292,7 +292,7 @@ classDiagram
 | `License` | `allows()` uses the licence class hierarchy; `isValidUntil()` must hold for the trip end date. Only `verified` licences count. | `system_vision.md` §8 Driver eligibility |
 | `Vehicle` | `updateOdometer()` rejects lower values (`ODOMETER_DECREASED`). `changeStatus()` allows only the manual transitions in [`state_diagrams.md`](state_diagrams.md) (`INVALID_STATUS_TRANSITION`). | `openapi.yaml` `changeVehicleStatus` |
 | `MaintenancePlan` | Holds the last service km and date of one rule on one vehicle. `nextDueKm = lastServiceKm + intervalKm`, `nextDueDate = lastServiceDate + intervalMonths`. `evaluate()` returns `DUE` at the interval and `DUE_SOON` inside `warnKm` / `warnDays`. | `system_vision.md` §8, §12 |
-| `MaintenanceRuleEngine` | `isBlockedForTrip()` blocks when `remainingKm < estimatedKm + 100` or `nextDueDate < endAt`. `onTripCompleted()` opens alerts and moves the vehicle to `IN_MAINTENANCE` when any rule is `DUE`. | `system_vision.md` §8 Trip blocking, Automatic maintenance status |
+| `MaintenanceRuleEngine` | `isBlockedForTrip()` blocks when `remainingKm < estimatedKm + 100` or `nextDueDate < endAt`. `onTripCompleted()` handles `TripCompletedEvent`, opens or raises alerts and returns whether any rule is `DUE`; `handover` then sets the vehicle to `IN_MAINTENANCE` ([`domain_events.md`](../domain_events.md) §3). | `system_vision.md` §8 Trip blocking, Automatic maintenance status |
 | `Reservation` | `overlaps()` uses half-open periods `[startAt, endAt)`, so back-to-back trips are allowed. `seatsAvailable() = vehicle.seatCount − seatsNeeded − passengers`. Only `CONFIRMED` can be cancelled. | `carpool_reservation_api.md` |
 | `RideMatcher` | Same destination, departure within tolerance (default 30 min), `allowRideSharing`, at least one free seat. | `system_vision.md` §8 Ride sharing |
 | `FuelReceipt` / `FuelAnomaly` | Litres above tank capacity rejected (`FUEL_EXCEEDS_TANK`); consumption > 25% above baseline flagged. | `system_vision.md` §8 Fuel anomaly |
