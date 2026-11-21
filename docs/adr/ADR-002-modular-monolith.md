@@ -29,7 +29,7 @@ and run the rule engine (maintenance), and either all of it is saved or none of 
    `handover → reservation, vehicle`; `maintenance → vehicle`; `fuel → vehicle, reservation`.
    `reporting` reads only. When a lower module must react to a higher one, it subscribes
    to a **domain event** instead of being called (e.g. `handover` publishes
-   `TripCompleted`, `maintenance` consumes it).
+   `TripCompletedEvent`, `maintenance` consumes it).
 4. **Synchronous in-process events.** The event bus in `app/shared/events.py` calls the
    handlers immediately, inside the caller's database transaction. There is no broker
    and no retry queue.

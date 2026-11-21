@@ -201,7 +201,7 @@ sequenceDiagram
 
 ## SD-6 · Return the vehicle and run the maintenance rule engine
 
-This is the core of demo step 5. The return and the maintenance evaluation run in the same transaction (`openapi.yaml` `recordReturn`).
+This is the core of demo step 5. The return and the maintenance evaluation run in the same transaction (`openapi.yaml` `recordReturn`). The event payload and the rule for the final vehicle status are defined in [`trip_completed_event.md`](../trip_completed_event.md).
 
 ```mermaid
 sequenceDiagram
@@ -225,7 +225,7 @@ sequenceDiagram
     HO->>HO: tripKm = 570, kmLimitExceeded = tripKm > estimatedKm x 1.3
     HO->>VEH: updateOdometer(60,020)
     HO->>RES: complete(reservation) — ACTIVE to COMPLETED
-    HO->>BUS: publish TripCompleted(vehicleId, odometerKm)
+    HO->>BUS: publish TripCompletedEvent(vehicleId, returnOdometerKm, tripKm, ...)
     BUS->>MNT: onTripCompleted(event)
     MNT->>DB: maintenance plans and active rules
     loop each active rule
@@ -233,15 +233,17 @@ sequenceDiagram
     end
     alt any rule DUE (oil change at 60,000 km)
         MNT->>DB: INSERT maintenance_alert (DUE, OPEN)
-        MNT->>VEH: changeStatus(IN_MAINTENANCE)
     else only DUE_SOON or OK
         MNT->>DB: INSERT alert for DUE_SOON (if not already open)
-        MNT->>VEH: changeStatus(AVAILABLE)
     end
-    MNT-->>BUS: alerts
-    BUS-->>HO: alerts
+    MNT-->>BUS: TripEvaluationResult {anyRuleDue, alerts}
+    BUS-->>HO: [TripEvaluationResult]
     alt SEVERE damage reported
         HO->>VEH: changeStatus(OUT_OF_SERVICE)
+    else anyRuleDue
+        HO->>VEH: changeStatus(IN_MAINTENANCE)
+    else
+        HO->>VEH: changeStatus(AVAILABLE)
     end
     HO->>DB: COMMIT
     HO-->>SPA: 201 ReturnResult {tripKm, kmLimitExceeded, vehicleStatus=IN_MAINTENANCE, maintenanceAlerts}
