@@ -201,7 +201,7 @@ sequenceDiagram
 
 ## SD-6 · Return the vehicle and run the maintenance rule engine
 
-This is the core of demo step 5. The return and the maintenance evaluation run in the same transaction (`openapi.yaml` `recordReturn`). The event payload and the rule for the final vehicle status are defined in [`trip_completed_event.md`](../trip_completed_event.md).
+This is the core of demo step 5. The return and the maintenance evaluation run in the same transaction (`openapi.yaml` `recordReturn`). The event payload and the rule for the final vehicle status are defined in [`domain_events.md`](../domain_events.md).
 
 ```mermaid
 sequenceDiagram
@@ -225,7 +225,7 @@ sequenceDiagram
     HO->>HO: tripKm = 570, kmLimitExceeded = tripKm > estimatedKm x 1.3
     HO->>VEH: updateOdometer(60,020)
     HO->>RES: complete(reservation) — ACTIVE to COMPLETED
-    HO->>BUS: publish TripCompletedEvent(vehicleId, returnOdometerKm, tripKm, ...)
+    HO->>BUS: publish TripCompletedEvent(vehicleId, odometerKm, tripKm, ...)
     BUS->>MNT: onTripCompleted(event)
     MNT->>DB: maintenance plans and active rules
     loop each active rule
