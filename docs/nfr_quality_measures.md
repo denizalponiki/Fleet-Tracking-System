@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | Course / phase | BM 321 / SENG 321 · Sprint 2 — Requirements & Architecture |
-| Status | **Draft — operational NFRs for review; QA quality measures pending** |
+| Status | **Draft — operational and QA quality NFRs for review** |
 | Operational requirements owner | Deniz Alp Oniki · DevOps & CI/CD Infrastructure Engineer |
 | Quality / test requirements co-owner | Abdullah Tecimen · QA & Test Automation Engineer |
 | Architecture approver | Ali Eren Kurt · Lead Software Architect & Technical Lead |
@@ -102,15 +102,211 @@ Each requirement uses: **ID**, **statement**, **measurable pass criteria**, **ve
 | OPS-07 | README / deployment runbook | US-46 | DevOps |
 | OPS-08 | C4 and UML deployment diagram, deployment config | DD-2 | DevOps + Architect |
 
-## 4. QA / product quality requirements — pending co-author review
+## 4. QA / product quality NFRs — QA responsibility
 
-**Owner: Abdullah Tecimen (QA & Test Automation Engineer).** The Sprint 2 shared deliverable also requires measurable performance, security, accessibility, reliability and test-quality targets. These sections remain **TBD** until QA/PO agreement; they must **not** be interpreted as complete requirements merely because the operational section is drafted.
+**Owner: Abdullah Tecimen (QA & Test Automation Engineer).** This section uses the same format as section 2. All numbers are **team-proposed targets** except the 50% unit-test coverage, which comes from the course specification. They are sized for the expected scale in `system_vision.md` A6 (tens of vehicles, hundreds of users) and for a single-machine Docker Compose demo. Test case IDs refer to [`test_plans_and_coverage.md`](test_plans_and_coverage.md); planned new IDs are marked *(new)* and will be added to the test plan when the tests are written.
 
-- **Performance:** Agree tested endpoints, concurrent-user/load assumptions, response-time percentile and measurement tooling.
-- **Security:** Agree authentication, authorization, invalid JWT behavior, input validation and secret-handling test evidence; maintain the existing requirement that `STAFF` cannot access fleet reports.
-- **Accessibility / usability:** Agree the UI accessibility baseline and how it will be tested against Figma and the later app.
-- **Testing:** Agree unit, integration and end-to-end test scope; course minimum is **50% unit-test coverage**.
-- **Consistency / availability:** Agree reservation conflict tests and measurable recovery/readiness evidence.
+### 4.1 Performance
+
+#### NFR-PERF-01 · API response time
+
+**Statement:** Under the expected demo load, the API shall answer typical requests fast enough that the UI feels immediate.
+
+**Pass criteria:** With the full Compose stack and demo seed data (US-47), a load test of **20 concurrent virtual users for 5 minutes** shows:
+
+| Endpoint group | p95 response time | Error rate |
+|---|---|---|
+| Read endpoints (`GET /vehicles`, `GET /reservations`, `GET /maintenance/alerts`, `GET /locations`, `GET /me`) | ≤ 500 ms | < 1% |
+| Write endpoints (`POST /reservations`, `POST /fuel-receipts`, pickup / return) | ≤ 800 ms | < 1% (expected `409`/`422` business errors are not counted as errors) |
+| `GET /vehicles/recommendations` | ≤ 1,000 ms | < 1% |
+| Reports (`/reports/*`) for one month of seed data | ≤ 2,000 ms | < 1% |
+
+**Verification:** Load test script with **Locust** (Python) in the repository; the report (p50, p95, max, error rate per endpoint) and the machine specification are attached to the test report. The same run is repeated once to show the result is stable. **Target:** Script in Sprint 3 after US-46; measured result for Final.
+
+#### NFR-PERF-02 · Bounded list responses
+
+**Statement:** List endpoints shall not return unbounded result sets.
+
+**Pass criteria:** The list endpoints that use the `Page` and `Size` parameters in `openapi.yaml` (currently `GET /users`, `GET /vehicles`, `GET /reservations`, `GET /maintenance/alerts`) return at most 20 items by default; `size` above 100 is rejected with `400 VALIDATION_ERROR`. **Open point for the Architect:** `GET /vehicles/{vehicleId}/fuel-receipts`, `GET /fuel/anomalies` and `GET /expenses` also grow with usage but are not paginated yet.
+
+**Verification:** Integration test per list endpoint with `size=101` and with no parameters *(new: TC-NFR-PERF-02)*. **Target:** Sprint 3.
+
+#### NFR-PERF-03 · Web page load
+
+**Statement:** The main screens of the SPA shall load quickly on a normal campus computer.
+
+**Pass criteria:** Lighthouse (desktop profile) performance score **≥ 80** for the login, trip request and maintenance alerts screens served by the production build behind Nginx; Largest Contentful Paint ≤ 2.5 s.
+
+**Verification:** Lighthouse report for the three screens attached to the Final test report. **Target:** Final.
+
+### 4.2 Security
+
+These requirements turn `system_vision.md` §10 (Security, KVKK) and ADR-005 into testable checks.
+
+#### NFR-SEC-01 · Authentication on every protected operation
+
+**Statement:** Every API operation except `POST /auth/login` shall require a valid JWT.
+
+**Pass criteria:** For **100% of protected operations in `openapi.yaml`**, a request with (a) no token, (b) a malformed token, (c) a token signed with a different secret and (d) an expired token returns `401 UNAUTHORIZED` as `application/problem+json`. Tokens expire after 60 minutes (`expiresIn: 3600`).
+
+**Verification:** A parametrised pytest that reads the operation list from `openapi.yaml` and runs the four cases against each operation, so new endpoints are covered automatically (extends TC-AUTH-03). **Target:** Sprint 3.
+
+#### NFR-SEC-02 · Role and ownership authorisation
+
+**Statement:** The server shall enforce the role and ownership rules stated in `openapi.yaml`; hiding a menu item in the UI is not considered protection.
+
+**Pass criteria:** For every protected operation, at least one test calls it with a role that is **not** allowed and receives `403 FORBIDDEN`. In particular: `STAFF` cannot access `/reports/*` or `GET /fuel/anomalies` (TC-FUEL-09), cannot verify licences (TC-ELG-05) and cannot read another user's reservation (TC-RES-07). A role change takes effect at the next login.
+
+**Verification:** Role-matrix integration test (operation × role → expected status) kept next to the API tests; the matrix is reviewed against the `openapi.yaml` descriptions by the Lead Architect. **Target:** Sprint 3 for Must endpoints, Final for all.
+
+#### NFR-SEC-03 · Password and credential handling
+
+**Statement:** Passwords shall never be stored or returned in a recoverable form.
+
+**Pass criteria:** Passwords are stored only as Argon2id hashes; passwords shorter than 8 characters are rejected with `400 VALIDATION_ERROR`; no API response contains a password or hash field; unknown email and wrong password both return `401 INVALID_CREDENTIALS` with the same body.
+
+**Verification:** Unit test on the hashing function; integration tests TC-AUTH-01/02 extended to compare the two `401` bodies; database inspection of a seeded user *(new: TC-NFR-SEC-03)*. **Target:** Sprint 3.
+
+#### NFR-SEC-04 · Input validation and safe errors
+
+**Statement:** Invalid input shall be rejected with a controlled error, and errors shall not leak internal details.
+
+**Pass criteria:** Malformed or out-of-range input returns `400 VALIDATION_ERROR` with field-level `errors` (ADR-003); SQL-injection-style strings (for example `' OR 1=1 --`) in text fields and query parameters are stored or rejected as normal data and never change the result set; no error response contains a stack trace, SQL text, file path or library name.
+
+**Verification:** Negative integration tests on login, reservation and fuel receipt endpoints *(new: TC-NFR-SEC-04)*; a check in the shared test helper that fails any test whose error body contains `Traceback` or `sqlalchemy`. **Target:** Sprint 3.
+
+#### NFR-SEC-05 · Personal data, secrets and dependencies
+
+**Statement:** FleetSync shall protect personal data under KVKK and keep secrets and vulnerable dependencies out of the release.
+
+**Pass criteria:**
+- Licence numbers and licence details are returned only to the owner and to `FLEET_MANAGER`; other roles receive `403` or a response without those fields.
+- Application logs never contain passwords, JWTs or `JWT_SECRET` (shared with NFR-OPS-02).
+- Demo and test data use invented people only.
+- `pip-audit` and `npm audit` report **no high or critical vulnerabilities** in the release dependencies; SonarQube reports **0 open vulnerabilities** of severity critical or blocker.
+
+**Verification:** Integration test for licence visibility *(new: TC-NFR-SEC-05)*; log inspection during the E2E run; dependency audit output and SonarQube summary attached to the Final report. **Target:** Sprint 3 (licence visibility), Final (audits).
+
+### 4.3 Accessibility and usability
+
+#### NFR-ACC-01 · Accessibility baseline (WCAG 2.1 AA)
+
+**Statement:** The screens used in the jury demo shall meet a WCAG 2.1 level AA baseline.
+
+**Pass criteria:** On the login, trip request and recommendation, ride join, pickup/return checklist, maintenance alerts and reports screens:
+- automated accessibility scan reports **0 serious or critical violations**;
+- Lighthouse accessibility score **≥ 90**;
+- text contrast is at least **4.5:1** (3:1 for large text and UI controls);
+- every form field has a visible label, and validation errors are shown as text next to the field.
+
+**Verification:** `axe-core` scan run from the Playwright E2E suite on each demo screen *(new: TC-NFR-ACC-01)*; Lighthouse report; contrast of the Figma colour palette checked before implementation. **Target:** Figma palette check in Sprint 2 review; automated scan in Final.
+
+#### NFR-ACC-02 · Keyboard use and non-colour status
+
+**Statement:** The main demo flow shall be usable without a mouse, and status information shall not rely on colour alone (`ui_ux_flow_and_dashboard.md` §5).
+
+**Pass criteria:** Demo steps 1–6 can be completed using only the keyboard (Tab, Shift+Tab, Enter, Space, Esc) with a visible focus indicator; vehicle, reservation and alert statuses always show the status text (`AVAILABLE`, `IN_MAINTENANCE`, `DUE`, …) next to any colour or icon.
+
+**Verification:** Manual keyboard walkthrough recorded in the test report; review of Figma screens for status text. **Target:** Figma review in Sprint 2; walkthrough in Final.
+
+#### NFR-USE-01 · Fast vehicle request (goal G4)
+
+**Statement:** A staff member shall be able to complete a valid vehicle request quickly without training.
+
+**Pass criteria:** In a usability test with **at least 5 participants** who have not seen the screens before, at least **4 of 5** complete a valid trip request and reservation in **under 2 minutes** (G4 in `system_vision.md`). The screens remain usable at **360 px** and **1280 px** viewport widths.
+
+**Verification:** Timed task with the Figma prototype in Sprint 2/3, repeated with the real application for Final; results (time per participant, problems seen) recorded in the test report. **Target:** Prototype test before Sprint 3 implementation; application test in Final.
+
+### 4.4 Reliability and data consistency
+
+#### NFR-REL-01 · No double booking under concurrency (goal G2)
+
+**Statement:** The system shall never store two overlapping `CONFIRMED`/`ACTIVE` reservations for the same vehicle, or more passengers than free seats, even under concurrent requests (ADR-004).
+
+**Pass criteria:** Two concurrent `POST /reservations` for the same vehicle and period return **exactly one `201` and one `409 RESERVATION_CONFLICT`**; repeated **20 times**, the database contains **0** overlapping reservations. Two concurrent joins for the last free seat return one `201` and one `422 SEAT_CAPACITY_EXCEEDED`. Back-to-back periods are still accepted (TC-RES-03).
+
+**Verification:** Concurrency integration tests against PostgreSQL *(new: TC-RES-11, TC-POOL-07)*; SQL check for overlaps after the run. **Target:** Sprint 3.
+
+#### NFR-REL-02 · Maintenance rules are applied atomically (goals G1, G3)
+
+**Statement:** A return that crosses a service threshold shall always create the alert and change the vehicle status, or change nothing.
+
+**Pass criteria:** In 100% of tests where the return odometer reaches the threshold, the response contains the alert, the alert is `OPEN` and the vehicle is `IN_MAINTENANCE` (TC-MNT-06/07); if alert creation fails (simulated error), the return is rolled back and the reservation stays `ACTIVE`. No reservation can start with a vehicle that is blocked by the 100 km safety buffer (TC-REC-01, TC-RES-04).
+
+**Verification:** Integration tests including one fault-injection test *(new: TC-MNT-11)*. **Target:** Sprint 3.
+
+#### NFR-REL-03 · Consistent, contract-conformant errors
+
+**Statement:** All error responses shall follow ADR-003 so that the frontend and tests can rely on them.
+
+**Pass criteria:** **100%** of error responses observed in the integration test suite have `Content-Type: application/problem+json`, the fields `type`, `title`, `status` and `code`, and a `code` value from the `ErrorCode` enum in `openapi.yaml`. Successful responses validate against their `openapi.yaml` schema.
+
+**Verification:** A shared assertion helper used by every API test, plus schema validation of responses against `openapi.yaml`. **Target:** Sprint 3.
+
+#### NFR-REL-04 · Stable demo run
+
+**Statement:** The jury demo journey shall run reliably from a clean start.
+
+**Pass criteria:** The automated E2E demo test (TC-E2E-01 to TC-E2E-05, US-50) passes in **5 consecutive runs** on a freshly started stack with seed data, with no retries.
+
+**Verification:** CI or local run log of 5 consecutive passes, attached to the Final report. Recovery after restarting services is covered by NFR-OPS-05. **Target:** Final.
+
+### 4.5 Test quality and maintainability
+
+#### NFR-TEST-01 · Unit-test coverage
+
+**Statement:** Backend code shall be covered by automated unit tests.
+
+**Pass criteria:** Backend line coverage measured by `pytest-cov` is **≥ 50%** (course requirement) and CI fails below it (NFR-OPS-06, US-49). Team target for the business-rule modules `maintenance`, `reservation`, `handover` and `fuel`: **≥ 70%**. Frontend coverage from Vitest is published but not used as a gate.
+
+**Verification:** Coverage report published in each PR's CI run; per-module table in the Sprint 3 and Final reports. **Target:** Sprint 3.
+
+#### NFR-TEST-02 · Acceptance-criteria coverage
+
+**Statement:** Every Must user story shall be verified by tests derived from its acceptance criteria.
+
+**Pass criteria:** Sprint 2: every Must story has at least one test case in the test plan (including US-03, US-07, US-08, US-14, US-18). Sprint 3: every Must story in the MVP has at least one automated test. Final: **100%** of Must acceptance criteria have at least one automated test, shown in the traceability matrix (story → endpoint → test → PR).
+
+**Verification:** Traceability section of `test_plans_and_coverage.md` and the SRS traceability matrix. **Target:** Sprint 2 / Sprint 3 / Final as stated.
+
+#### NFR-TEST-03 · Realistic integration and end-to-end testing
+
+**Statement:** Integration tests shall run against the same database engine as production, and the demo journey shall be tested end to end.
+
+**Pass criteria:** Integration tests use PostgreSQL 16 in Docker (Testcontainers), not SQLite (required by ADR-004); they run in CI on every PR to `develop` (US-51); the Playwright E2E test of the demo journey runs in CI before each submission (US-50).
+
+**Verification:** CI workflow files and run logs. **Target:** Sprint 3 (integration), Final (E2E).
+
+#### NFR-TEST-04 · Static analysis and open defects
+
+**Statement:** The release shall have no known critical quality problems.
+
+**Pass criteria:** SonarQube quality gate **passed**, with **0 blocker and 0 critical issues** and duplicated lines **< 5%** on new code; **0 open critical or blocker defects** (GitHub issues labelled `bug`) at the Final demo.
+
+**Verification:** SonarQube summary and a filtered issue list attached to the Final report. **Target:** Final.
+
+### 4.6 QA traceability
+
+| NFR | Main evidence | Backlog / ADR link | Review |
+|---|---|---|---|
+| PERF-01 | Locust report | US-46, US-47 | QA + Backend + Architect |
+| PERF-02 | Pagination integration tests | `openapi.yaml` | QA + Backend |
+| PERF-03 | Lighthouse report | US-38 – US-43 | QA + Frontend |
+| SEC-01 | Parametrised auth test | US-01, ADR-005 | QA + Architect |
+| SEC-02 | Role-matrix test | US-01, US-04, US-21, US-31, US-34 – US-36 | QA + PO |
+| SEC-03 | Hashing unit test, auth tests | US-01, US-02, ADR-005 | QA + PO |
+| SEC-04 | Negative input tests | ADR-003 | QA + Backend |
+| SEC-05 | Licence visibility test, audits, SonarQube | US-03, US-04, §10 KVKK | QA + DevOps |
+| ACC-01, ACC-02 | axe / Lighthouse report, keyboard walkthrough | US-38 – US-43 | QA + Frontend |
+| USE-01 | Usability test results | G4, US-40 | QA + Frontend + PO |
+| REL-01 | Concurrency tests | US-20, US-24, ADR-004 | QA + Backend |
+| REL-02 | Return / maintenance tests | US-12, US-13, G1, G3 | QA + Architect |
+| REL-03 | Problem-details assertion, schema validation | ADR-003 | QA + Backend |
+| REL-04 | 5 consecutive E2E passes | US-50 | QA + DevOps |
+| TEST-01 | Coverage report | US-49 | QA + DevOps |
+| TEST-02 | Traceability matrix | All Must stories | QA + PO |
+| TEST-03 | CI workflows | US-50, US-51, ADR-004 | QA + DevOps |
+| TEST-04 | SonarQube summary, issue list | Final readiness | QA + DevOps |
 
 ## 5. Sprint 2 review and open decisions
 
@@ -120,7 +316,12 @@ Each requirement uses: **ID**, **statement**, **measurable pass criteria**, **ve
 | Approve localhost HTTP vs public HTTPS rule (DD-2) | Ali Eren Kurt + Deniz Alp Oniki | Open |
 | Confirm API/JWT environment-variable names (DD-3) | Ali Eren Kurt + Deniz Alp Oniki | Open |
 | Review backup/restore method (DD-4) | Deniz Alp Oniki + Abdullah Tecimen | Open |
-| Add and baseline measurable QA metrics | Abdullah Tecimen | Open |
+| Add measurable QA metrics (section 4) | Abdullah Tecimen | Drafted — in review |
+| Approve QA numeric targets (PERF-01 load profile, 70% module coverage, WCAG 2.1 AA) | Ali Eren Kurt + Ahmet Can Vurmaz | Open |
+| Confirm performance targets are realistic for the reservation and recommendation queries | Ahmet Tarık Orhan | Open |
+| Decide pagination for fuel receipts, anomalies and expenses (PERF-02) | Ali Eren Kurt | Open |
+| Check Figma palette contrast and status text (ACC-01, ACC-02) | Mustafa Düşünceli + Abdullah Tecimen | Open |
+| Add the *(new)* test case IDs from section 4 to the test plan | Abdullah Tecimen | Open |
 | Reconcile with SRS and traceability | Ahmet Can Vurmaz | Open |
 
 **Sprint 2 exit condition:** Requirement IDs, measurable acceptance criteria and verification methods are documented and reviewed. Do not mark future operational implementation as complete until its tests have actually run.
