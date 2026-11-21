@@ -4,7 +4,7 @@
 |---|---|
 | Course | SENG 321 Software Engineering · Sprint 2 |
 | Owner | Abdullah Tecimen – Quality Assurance & Test Automation Engineer |
-| Version | 0.4 · Sprint 2 (test cases for all Must stories; aligned with `openapi.yaml` and `docs/srs/srs.md`) |
+| Version | 0.5 · Sprint 2 (F3–F5 closed with report and fuel-anomaly test cases; aligned with `openapi.yaml` and `docs/srs/srs.md`) |
 | Related documents | [`product_backlog.md`](product_backlog.md), [`openapi.yaml`](openapi.yaml), [`system_vision.md`](system_vision.md), [`raci_matrix.md`](raci_matrix.md), [`srs/srs.md`](srs/srs.md), [`nfr_quality_measures.md`](nfr_quality_measures.md) |
 
 ---
@@ -137,7 +137,7 @@ Rule: odometer readings never go backwards; a trip more than 30% longer than est
 
 ### 6.6 Fuel Receipts and Anomalies
 
-Rule: consumption more than 25% above the vehicle's average, or litres above tank capacity, is flagged.
+Rule: consumption more than 25% above the vehicle's average, or litres above tank capacity, is flagged. The average (baseline) is the all-time average of the vehicle's completed full-tank intervals, excluding intervals flagged `CONSUMPTION_SPIKE`; it is used only after **at least 3** completed intervals. Partial fills (`fullTank = false`) between two full tanks are added to the next full-tank interval. `OUTSIDE_RESERVATION` does not depend on the average and is checked from the first receipt (`srs.md` REQ-FUE-02, F5).
 
 | ID | User story | Scenario | Expected result | Level |
 |----|-----------|----------|-----------------|-------|
@@ -146,10 +146,16 @@ Rule: consumption more than 25% above the vehicle's average, or litres above tan
 | TC-FUEL-03 | US-29 | Litres above the vehicle's tank capacity | `422 FUEL_EXCEEDS_TANK` | U, I |
 | TC-FUEL-04 | US-29 | Receipt for a non-existent vehicle | `404 NOT_FOUND` | I |
 | TC-FUEL-05 | US-30 | Two full-tank receipts 500 km apart, 40 L at the second | Consumption 8.0 L/100 km | U |
-| TC-FUEL-06 | US-31 | Average 8.0 L/100 km, new value 10.1 L/100 km (> 25%) | Receipt saved, anomaly `CONSUMPTION_SPIKE` | U |
-| TC-FUEL-07 | US-31 | Average 8.0 L/100 km, new value exactly 10.0 L/100 km (25%) | Not flagged | U |
+| TC-FUEL-06 | US-31 | Baseline 8.0 L/100 km from 3 completed intervals, new value 10.1 L/100 km (> 25%) | Receipt saved, anomaly `CONSUMPTION_SPIKE` | U |
+| TC-FUEL-07 | US-31 | Baseline 8.0 L/100 km from 3 completed intervals, new value exactly 10.0 L/100 km (25%) | Not flagged | U |
 | TC-FUEL-08 | US-31 | Receipt dated outside any reservation of the vehicle | Anomaly `OUTSIDE_RESERVATION` | U |
 | TC-FUEL-09 | US-31 | Staff member requests the anomaly list | `403 FORBIDDEN` | I |
+| TC-FUEL-10 | US-31 | Only 2 completed intervals (8.0 and 8.0 L/100 km); third interval 12.0 L/100 km | Receipt saved, **no** `CONSUMPTION_SPIKE` (fewer than 3 intervals) | U |
+| TC-FUEL-11 | US-31 | 3 completed intervals of 8.0 L/100 km; fourth interval 10.1 L/100 km | `CONSUMPTION_SPIKE` (first interval that can be flagged) | U |
+| TC-FUEL-12 | US-31 | Intervals 8.0, 8.0, 8.0; then 12.0 (flagged); then 10.1 | 12.0 flagged; baseline stays 8.0, so 10.1 is **also** flagged (if the flagged interval were counted, the baseline would be 9.0 and 10.1 would pass) | U |
+| TC-FUEL-13 | US-31 | Intervals 7.0, 8.0, 9.0, 8.0, none flagged | Baseline (`baselineLPer100Km`) = 8.0, the all-time average | U, I |
+| TC-FUEL-14 | US-30 | Full tank at 10,000 km; partial fill 15 L at 10,200 km; full tank 25 L at 10,500 km | One interval: (15 + 25) / 500 × 100 = 8.0 L/100 km | U |
+| TC-FUEL-15 | US-31 | The vehicle's very first receipt is dated outside any reservation | Anomaly `OUTSIDE_RESERVATION` (no baseline needed) | U, I |
 
 ### 6.7 Ride Sharing
 
@@ -231,7 +237,33 @@ Rule: a new vehicle starts as `AVAILABLE`; the plate follows the Turkish format 
 | TC-LOC-02 | US-18 | Any destination in the list | `distanceKmFromBase` is a positive integer | I |
 | TC-LOC-03 | US-18 | Staff member opens the trip request screen | Destination list filled from `GET /locations`; choosing one uses its distance for the request | E (part of TC-E2E-01) |
 
-### 6.13 Jury Demo Journey (E2E)
+### 6.13 Reports: Carbon and Utilisation
+
+Rules (`srs.md` REQ-REP-02 and REQ-REP-03, F3 and F4):
+- **Carbon:** kg CO₂ = litres × factor; factors in kg CO₂/L: `GASOLINE` 2.31, `DIESEL` 2.68, `HYBRID` 2.31, `ELECTRIC` 0.0. Ride-sharing saving = passengers (driver excluded) × (trip km / 100) × the vehicle's average consumption (L/100 km) × factor; a vehicle without a full-tank average yet uses 8.0 L/100 km.
+- **Utilisation:** utilisation % = reserved hours / available hours × 100. Working hours are Monday–Friday 08:00–17:00 (9 h/day); weekends are excluded, public holidays are not. Only the part of a reservation inside working hours counts. `IN_MAINTENANCE` and `OUT_OF_SERVICE` time is removed from available hours.
+- **Time zone:** times are stored in UTC; report periods and working hours are evaluated in Europe/Istanbul (UTC+3, no daylight saving) (`openapi.yaml`, #274).
+
+| ID | User story | Scenario | Expected result | Level |
+|----|-----------|----------|-----------------|-------|
+| TC-REP-01 | US-35 | Diesel vehicle, 100 L of fuel in the period | `kgCo2` = 268.0 | U |
+| TC-REP-02 | US-35 | Gasoline vehicle 50 L and hybrid vehicle 50 L | 115.5 kg each | U |
+| TC-REP-03 | US-35 | Electric vehicle in the fleet | `kgCo2` = 0; `emissionFactors` contains all four fuel types | U, I |
+| TC-REP-04 | US-35 | Diesel vehicle with average 7.5 L/100 km; 200 km trip with 2 passengers | `rideSharingSavedKgCo2` = 2 × 2 × 7.5 × 2.68 = 80.4 | U |
+| TC-REP-05 | US-35 | Gasoline vehicle with no full-tank average; 100 km trip with 1 passenger | Default 8.0 L/100 km used: 1 × 1 × 8.0 × 2.31 = 18.48 | U |
+| TC-REP-06 | US-35 | Trip with the driver only | Saving 0 | U |
+| TC-REP-07 | US-35 | Several vehicles in the period | `totalKgCo2` equals the sum of the items | I |
+| TC-REP-08 | US-36 | One full week (Monday–Sunday), no maintenance | `availableHours` = 45 (5 × 9) | U |
+| TC-REP-09 | US-36 | Same week, 22.5 reserved working hours | `utilizationPercent` = 50 | U, I |
+| TC-REP-10 | US-36 | Weekday reservation 16:00–20:00 | 1 reserved hour (16:00–17:00) | U |
+| TC-REP-11 | US-36 | Reservation on Saturday 10:00–14:00 | 0 reserved hours; Saturday adds no available hours | U |
+| TC-REP-12 | US-36 | Vehicle `IN_MAINTENANCE` all of Wednesday in a full week | `availableHours` = 36 | U |
+| TC-REP-13 | US-36 | Reservation stored as 05:00–07:00 UTC (08:00–10:00 Istanbul) | 2 reserved hours (evaluated in Istanbul time, not UTC) | U |
+| TC-REP-14 | US-36 | Reservations covering the whole period, including nights and the weekend | `utilizationPercent` = 100, never above | U |
+| TC-REP-15 | US-36 | Period with `to` before `from` | `400 VALIDATION_ERROR` | I |
+| TC-REP-16 | US-34 – US-36 | Staff member requests any report | `403 FORBIDDEN` | I |
+
+### 6.14 Jury Demo Journey (E2E)
 
 | ID | User stories | Scenario (`system_vision.md` §11) | Expected result | Level |
 |----|-------------|-----------------------------------|-----------------|-------|
@@ -261,7 +293,10 @@ Rule: a new vehicle starts as `AVAILABLE`; the plate follows the Turkish format 
 | US-23, US-24 | TC-POOL-01 – TC-POOL-06, TC-E2E-02 |
 | US-26, US-27 | TC-HND-01 – TC-HND-06, TC-E2E-03 |
 | US-29 | TC-FUEL-01 – TC-FUEL-04 |
-| US-34 – US-36, US-45 | TC-E2E-05 (detailed report tests added in Sprint 2) |
+| US-34 | TC-REP-16, TC-E2E-05 (cost calculation tests follow with US-32 expenses) |
+| US-35 | TC-REP-01 – TC-REP-07, TC-REP-16, TC-E2E-05 |
+| US-36 | TC-REP-08 – TC-REP-16, TC-E2E-05 |
+| US-45 | TC-E2E-05 |
 | US-38 – US-43 | TC-E2E-01 – TC-E2E-05 |
 | US-46 – US-51 | Verified by the CI pipeline itself (build, coverage report, E2E run) |
 
@@ -273,11 +308,11 @@ QA reviewed all acceptance criteria in `product_backlog.md` for testability and 
 
 | # | Finding | Affected | Status |
 |---|---|---|---|
-| F1 | Demo step 5 says the maintenance officer is notified, but `openapi.yaml` has no notification endpoint. Tests assume the notification is the `OPEN` alert in `GET /maintenance/alerts` plus a UI indicator. | US-13, US-43 | Open – decision by PO and Architect |
-| F2 | CSV export is listed in `system_vision.md` §7.1 but has no endpoint in `openapi.yaml`. | US-37 | Open |
-| F3 | The CO₂ factor per litre is not defined, so the carbon report cannot be checked against an expected value. | US-35 | Open |
-| F4 | "Available working hours" for utilisation is not defined. | US-36 | Open |
-| F5 | The number of earlier full-tank intervals needed before a fuel average is used is not defined. | US-31 | Open |
+| F1 | Demo step 5 says the maintenance officer is notified, but `openapi.yaml` has no notification endpoint. Tests assume the notification is the `OPEN` alert in `GET /maintenance/alerts` plus a UI indicator. | US-13, US-43 | Open – contract decision in #245 |
+| F2 | CSV export is listed in `system_vision.md` §7.1 but has no endpoint in `openapi.yaml`. | US-37 | Open – contract decision in #245 |
+| F3 | The CO₂ factor per litre is not defined, so the carbon report cannot be checked against an expected value. **Decision (PO, 2026-11-21):** factors in `srs.md` REQ-REP-02 (gasoline and hybrid 2.31, diesel 2.68, electric 0.0 kg CO₂/L) and the ride-sharing saving formula in §6.13; `HYBRID` and `ELECTRIC` added to `openapi.yaml` in #274. | US-35 | Fixed – TC-REP-01 – TC-REP-07 |
+| F4 | "Available working hours" for utilisation is not defined. **Decision (PO, 2026-11-21):** Monday–Friday 08:00–17:00, weekends excluded, no holiday calendar, only the overlap with working hours counts, maintenance time excluded (`srs.md` REQ-REP-03); Europe/Istanbul time zone (#274). Note: US-36 criterion 1 ("20 of 40 working hours") cannot occur with 9-hour days; TC-REP-09 uses 22.5 of 45. | US-36 | Fixed – TC-REP-08 – TC-REP-15 |
+| F5 | The number of earlier full-tank intervals needed before a fuel average is used is not defined. **Decision (PO, 2026-11-21):** at least 3 completed intervals; baseline is the all-time average excluding flagged intervals; partial fills join the next full-tank interval; `OUTSIDE_RESERVATION` is checked from the first receipt (`srs.md` REQ-FUE-02). | US-30, US-31 | Fixed – TC-FUEL-10 – TC-FUEL-15 |
 | F6 | `POST /reservations` returns several error codes under the same HTTP status: 409 for vehicle problems (`RESERVATION_CONFLICT`, `VEHICLE_MAINTENANCE_DUE`, `VEHICLE_UNAVAILABLE`) and 422 for driver or request problems (`LICENSE_EXPIRED`, `LICENSE_CLASS_MISMATCH`, `SEAT_CAPACITY_EXCEEDED`). Tests check the `code` field, not only the HTTP status. | US-20 | Applied in this plan |
 | F8 | The revised `openapi.yaml` (2026-11-02) returns `409 VEHICLE_MAINTENANCE_DUE` when a blocked vehicle is reserved; test plan v0.2 and `product_backlog.md` US-20 criterion 4 still said 422. Reported by the Backend Engineer in `carpool_reservation_api.md`.    Test plan fixed in v0.3 (#64); backlog fixed by the Product Owner (#66). | US-20 | Fixed | 
 | F9 | The duplicate-licence rule differs between documents: `product_backlog.md` US-03 criterion 2 rejects a **licence number** that is already registered; `openapi.yaml` rejects a second licence of the **same class** for the driver; `srs.md` REQ-ID-03 says "number/class for the same driver". TC-LIC-02 and TC-LIC-03 cover both readings until one is chosen. | US-03 | Open – decision by PO, contract update by Architect |
@@ -326,6 +361,6 @@ Before each sprint submission, QA checks:
 
 ## 13. Planned Updates
 
-- **Sprint 2:** Test cases for the remaining Must stories (done in v0.4); non-functional quality measures (`nfr_quality_measures.md` §4); close findings F1–F5, F9 and F10.
+- **Sprint 2:** Test cases for the remaining Must stories (done in v0.4); non-functional quality measures (`nfr_quality_measures.md` §4); F3–F5 closed in v0.5; close F1 and F2 after #245, F9 and F10 after the PO decision.
 - **Sprint 3:** Coverage report from the CI pipeline; unit and integration tests implemented.
 - **Final:** Integration and E2E test report; SonarQube summary.
