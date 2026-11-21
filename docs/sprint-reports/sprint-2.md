@@ -108,11 +108,14 @@ Present: …  · Absent: …
 
 ## 9. Sprint 1 retrospective
 
-<!-- Fill in from the meeting. Write only what the team said. -->
+Collected asynchronously on WhatsApp, 2026-11-21.
 
 | Went well | To improve | Action for Sprint 2 (owner) |
 |---|---|---|
-| | | |
+| Teamwork, and setting up the basic architecture went smoothly | – | Keep the role split and the review pairs in §6 (all) |
+| – | Periods without communication in the team | Async stand-ups on WhatsApp on 2026-11-22 and 2026-11-23 (Mehmet Umut Oğuzcan) |
+| – | Little experience with architecture design | Architecture drafts reviewed early by a second member before the final PR (Ali Eren Kurt, Ahmet Tarık Orhan) |
+| – | Problems were found late, and each finding became a separate issue, which inflated the issue list | Check each other's work early, while it is still a draft PR; group small findings into one review comment or one issue per document (all) |
 
 ## 10. Risks
 
@@ -133,7 +136,7 @@ Present: …  · Absent: …
 | C4 and UML architecture document | Ali Eren Kurt | | | Not started |
 | OpenAPI v1.0 freeze | Ali Eren Kurt | | | Not started |
 | `TripCompletedEvent` contract | Mehmet Umut Oğuzcan, Ali Eren Kurt | | | Not started |
-| Sprint 1 retrospective, stand-ups, this report | Mehmet Umut Oğuzcan | | | In progress |
+| Sprint 1 retrospective, stand-ups, this report | Mehmet Umut Oğuzcan | #251 | #257 | In progress |
 | `develop` → `main` and `sprint-2` tag | Deniz Alp Oniki | | | Not started |
 
 ## 12. Submission checklist

@@ -69,6 +69,7 @@ FleetSync manages institutional vehicles across their operational lifecycle: use
   - Every newly registered licence shall default to `verified = false`.
   - If `expiresAt` is in the past (or before `issuedAt`), the system shall reject with `400 VALIDATION_ERROR`.
   - Registering a duplicate licence number/class for the same driver shall return `409 DUPLICATE_LICENSE`.
+  - **Licence Renewal Rule:** `409 DUPLICATE_LICENSE` applies only when the driver already has a non-expired licence of the same `licenseClass` or when the same `licenseNumber` is re-submitted. If an existing licence of that class is expired (`expiresAt < current date`), registering a renewed licence of the same class via `POST /drivers/{driverId}/licenses` is permitted (starting with `verified = false` until verified by a `FLEET_MANAGER`); the expired record is retained for audit history.
   - `GET /drivers/{driverId}` and `GET /drivers/{driverId}/licenses` shall return the driver profile (including computed `canDrive` boolean) and licence list.
 
 #### REQ-ID-04: Driving Licence Verification (US-04)
