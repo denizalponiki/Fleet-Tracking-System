@@ -1,7 +1,7 @@
-from dataclasses import dataclass
+from dataclasses import FrozenInstanceError, dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Annotated
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 from fastapi import Depends
@@ -116,17 +116,38 @@ def test_password_hash_roundtrip():
 # ------------------------------------------------------------------ events (ADR-002)
 
 
-@dataclass(frozen=True)
-class TripCompleted(DomainEvent):
-    vehicle_id: str
+@dataclass(frozen=True, kw_only=True)
+class TripCompletedEvent(DomainEvent):  # shape from docs/domain_events.md §2
+    reservation_id: UUID
+    vehicle_id: UUID
     odometer_km: int
+    trip_km: int
+    severe_damage_reported: bool
+
+
+def _trip(odometer_km: int = 60020) -> TripCompletedEvent:
+    return TripCompletedEvent(reservation_id=uuid4(), vehicle_id=uuid4(), odometer_km=odometer_km,
+                              trip_km=570, severe_damage_reported=False)
+
+
+def test_domain_event_adds_id_and_utc_time():
+    first, second = _trip(), _trip()
+    assert isinstance(first.event_id, UUID)
+    assert first.event_id != second.event_id
+    assert first.occurred_at.tzinfo is not None
+    assert first.occurred_at.utcoffset() == timedelta(0)
+
+
+def test_domain_event_is_immutable():
+    with pytest.raises(FrozenInstanceError):
+        _trip().odometer_km = 1  # type: ignore[misc]
 
 
 def test_event_bus_calls_handlers_in_order_and_returns_results():
     bus = EventBus()
-    bus.subscribe(TripCompleted, lambda e: f"alert for {e.odometer_km}")
-    bus.subscribe(TripCompleted, lambda e: "second")
-    assert bus.publish(TripCompleted("v1", 60020)) == ["alert for 60020", "second"]
+    bus.subscribe(TripCompletedEvent, lambda e: f"alert for {e.odometer_km}")
+    bus.subscribe(TripCompletedEvent, lambda e: "second")
+    assert bus.publish(_trip(60020)) == ["alert for 60020", "second"]
 
 
 def test_event_bus_handler_error_propagates():
@@ -135,9 +156,9 @@ def test_event_bus_handler_error_propagates():
     def boom(_):
         raise DomainError(422, "ODOMETER_DECREASED", "lower")
 
-    bus.subscribe(TripCompleted, boom)
+    bus.subscribe(TripCompletedEvent, boom)
     with pytest.raises(DomainError):
-        bus.publish(TripCompleted("v1", 1))
+        bus.publish(_trip(1))
 
 
 # ------------------------------------------------------------------ app
