@@ -154,10 +154,10 @@ Every module also uses the `shared` components (security, problem handler, unit 
 |---|---|---|---|---|
 | `identity` | Accounts, password hashing, login and JWT, roles, driver profile, licences, licence verification, eligibility for a vehicle and period | – | – | Ahmet Can Vurmaz |
 | `vehicle` | Vehicle registry, plate uniqueness, odometer (never decreases), status state machine ([`state_diagrams.md`](../uml/state_diagrams.md)) | – | – | Ali Eren Kurt |
-| `maintenance` | Rules and intervals, per-vehicle maintenance plans, evaluation (`OK` / `DUE_SOON` / `DUE`), trip blocking check, alerts, service records, calendar | `vehicle` | consumes `TripCompletedEvent`, `VehicleOdometerUpdated` | Ali Eren Kurt |
+| `maintenance` | Rules and intervals, per-vehicle maintenance plans, evaluation (`OK` / `DUE_SOON` / `DUE`), trip blocking check, alerts, service records, calendar | `vehicle` | consumes `TripCompletedEvent` | Ali Eren Kurt |
 | `reservation` | Destinations, recommendation and scoring, reservation lifecycle, no-overlap rule | `identity`, `vehicle`, `maintenance` | publishes `ReservationCancelled` | Ahmet Tarık Orhan |
 | `carpool` | Ride matching within the tolerance window, join/leave, seat accounting | `reservation` | consumes `ReservationCancelled` | Ahmet Tarık Orhan |
-| `handover` | Checklist templates, pickup and return records, km limit check, damage reports | `reservation`, `vehicle` | publishes `TripCompletedEvent`, `SevereDamageReported` | Mehmet Umut Oğuzcan |
+| `handover` | Checklist templates, pickup and return records, km limit check, damage reports | `reservation`, `vehicle` | publishes `TripCompletedEvent` ([contract](../domain_events.md)) | Mehmet Umut Oğuzcan |
 | `fuel` | Fuel receipts, consumption between full tanks, anomaly detection, trip expenses | `vehicle`, `reservation` | – | Abdullah Tecimen |
 | `reporting` | Fleet summary, cost, carbon, utilisation; read-only queries over the other modules' data | read access to all | – | Deniz Alp Oniki |
 
