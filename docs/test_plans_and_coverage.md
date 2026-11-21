@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| Course | SENG 321 Software Engineering · Sprint 1 |
+| Course | SENG 321 Software Engineering · Sprint 2 |
 | Owner | Abdullah Tecimen – Quality Assurance & Test Automation Engineer |
-| Version | 0.3 · Sprint 1 (aligned with the revised `openapi.yaml` of 2026-11-02) |
-| Related documents | [`product_backlog.md`](product_backlog.md), [`openapi.yaml`](openapi.yaml), [`system_vision.md`](system_vision.md), [`raci_matrix.md`](raci_matrix.md) |
+| Version | 0.4 · Sprint 2 (test cases for all Must stories; aligned with `openapi.yaml` and `docs/srs/srs.md`) |
+| Related documents | [`product_backlog.md`](product_backlog.md), [`openapi.yaml`](openapi.yaml), [`system_vision.md`](system_vision.md), [`raci_matrix.md`](raci_matrix.md), [`srs/srs.md`](srs/srs.md), [`nfr_quality_measures.md`](nfr_quality_measures.md) |
 
 ---
 
@@ -173,7 +173,65 @@ Rule: same destination, departure within 30 minutes, enough free seats.
 | TC-AUTH-03 | US-01 | Any endpoint except login without a token | `401 UNAUTHORIZED` | I |
 | TC-AUTH-04 | US-02 | Create a user with an existing email | `409 DUPLICATE_EMAIL` | I |
 
-### 6.9 Jury Demo Journey (E2E)
+### 6.9 Driver Licences
+
+Rule: a new licence starts with `verified = false`; only a fleet manager verifies it (US-04). Licence data is personal data under KVKK (`system_vision.md` §10).
+
+| ID | User story | Scenario | Expected result | Level |
+|----|-----------|----------|-----------------|-------|
+| TC-LIC-01 | US-03 | Staff member adds a class B licence with number, issue date and a future expiry date to their own profile | `201`; licence returned with `verified = false`; it appears in `GET /drivers/{driverId}/licenses` | I |
+| TC-LIC-02 | US-03 | A licence number that is already registered is added again | `409 DUPLICATE_LICENSE` (see F9) | I |
+| TC-LIC-03 | US-03 | Driver who already has a class B licence adds a second class B licence with a different number | `409 DUPLICATE_LICENSE` (see F9) | I |
+| TC-LIC-04 | US-03 | Expiry date is yesterday | `400 VALIDATION_ERROR` with a field error on `expiresAt` | U, I |
+| TC-LIC-05 | US-03 | Expiry date is today (boundary: not in the past) | `201` | U |
+| TC-LIC-06 | US-03 | Expiry date before the issue date | `400 VALIDATION_ERROR` | U, I |
+| TC-LIC-07 | US-03 | Unknown licence class (`A2`) or licence number shorter than 3 or longer than 20 characters | `400 VALIDATION_ERROR` | I |
+| TC-LIC-08 | US-03 | Licence added for a driver ID that does not exist | `404 NOT_FOUND` | I |
+| TC-LIC-09 | US-03 | Staff member adds a licence to another user's profile | `403 FORBIDDEN` (pending F10) | I |
+| TC-LIC-10 | US-03 | Staff member reads another user's licences (`GET /drivers/{driverId}/licenses`); a fleet manager reads the same list | Staff: `403 FORBIDDEN` (pending F10); fleet manager: `200` | I |
+
+### 6.10 Fleet Inventory
+
+Rule: a new vehicle starts as `AVAILABLE`; the plate follows the Turkish format in `openapi.yaml` (`06 FS 104`); a maintenance plan is created for every active rule from the vehicle's current mileage.
+
+| ID | User story | Scenario | Expected result | Level |
+|----|-----------|----------|-----------------|-------|
+| TC-VEH-01 | US-07 | Fleet manager adds a vehicle with valid data (example body in `openapi.yaml`) | `201`; status `AVAILABLE`; `maintenance.overallStatus` = `OK` | I |
+| TC-VEH-02 | US-07 | Vehicle added with a plate that already exists | `409 DUPLICATE_PLATE` | I |
+| TC-VEH-03 | US-07 | `odometerKm = -1` | `400 VALIDATION_ERROR` | U, I |
+| TC-VEH-04 | US-07 | `seatCount = 0` | `400 VALIDATION_ERROR` | U, I |
+| TC-VEH-05 | US-07 | Boundary values `odometerKm = 0` and `seatCount = 1` | `201` | U |
+| TC-VEH-06 | US-07 | `tankCapacityLiters = 0`, or plate in a wrong format (`6 FS 104`, `06FS104`, `06 fs 104`) | `400 VALIDATION_ERROR` | U, I |
+| TC-VEH-07 | US-07 | Staff member or maintenance officer tries to add a vehicle | `403 FORBIDDEN` | I |
+| TC-VEH-08 | US-07 | Vehicle added with odometer 21,000 km | One maintenance plan per active rule, starting at 21,000 km and today's date; oil change rule `OK` | I |
+| TC-VEH-09 | US-08 | Seed vehicles in `AVAILABLE`, `IN_USE` and `IN_MAINTENANCE`; list filtered by `status=AVAILABLE` | Only `AVAILABLE` vehicles returned; `page.totalElements` equals their number | I |
+| TC-VEH-10 | US-08 | List without filters | Every vehicle returned with `status` and `maintenance` summary (`overallStatus`, `remainingKm`, `remainingDays`) | I |
+| TC-VEH-11 | US-08 | Filters `type=MINIBUS` and `minSeats=9` | Only vehicles that match both filters | I |
+| TC-VEH-12 | US-08 | Unknown status value (`status=BROKEN`) | `400 VALIDATION_ERROR` | I |
+| TC-VEH-13 | US-08 | Details of a vehicle ID that does not exist | `404 NOT_FOUND` | I |
+| TC-VEH-14 | US-08 | Vehicle ID that is not a valid UUID | `400 VALIDATION_ERROR` (not FastAPI's default `422`; ADR-003) | I |
+| TC-VEH-15 | US-08 | List and details requested as `STAFF`, `FLEET_MANAGER` and `MAINTENANCE_OFFICER` | `200` for all three roles | I |
+
+### 6.11 Maintenance Alert List
+
+| ID | User story | Scenario | Expected result | Level |
+|----|-----------|----------|-----------------|-------|
+| TC-ALR-01 | US-14 | Two `OPEN` and one `RESOLVED` alert; list filtered by `status=OPEN` | Only the two `OPEN` alerts, newest `createdAt` first | I |
+| TC-ALR-02 | US-14 | Alerts for three vehicles; list filtered by `vehicleId` | Only that vehicle's alerts | I |
+| TC-ALR-03 | US-14 | List without filters | All alerts, `OPEN` and `RESOLVED`, sorted newest first; resolved alerts have `resolvedAt` | I |
+| TC-ALR-04 | US-14 | Filter `level=DUE` combined with `status=OPEN` | Only open alerts of level `DUE` | I |
+| TC-ALR-05 | US-14 | Filter by a vehicle that has no alerts | `200` with an empty `content` list | I |
+| TC-ALR-06 | US-14 | Unknown status value (`status=CLOSED`) | `400 VALIDATION_ERROR` | I |
+
+### 6.12 Trip Destinations
+
+| ID | User story | Scenario | Expected result | Level |
+|----|-----------|----------|-----------------|-------|
+| TC-LOC-01 | US-18 | Destinations from the demo seed data; list requested | Every seeded destination returned with `name`, `city` and `distanceKmFromBase` equal to the value in the seed data (US-47); no destination missing or duplicated | I |
+| TC-LOC-02 | US-18 | Any destination in the list | `distanceKmFromBase` is a positive integer | I |
+| TC-LOC-03 | US-18 | Staff member opens the trip request screen | Destination list filled from `GET /locations`; choosing one uses its distance for the request | E (part of TC-E2E-01) |
+
+### 6.13 Jury Demo Journey (E2E)
 
 | ID | User stories | Scenario (`system_vision.md` §11) | Expected result | Level |
 |----|-------------|-----------------------------------|-----------------|-------|
@@ -188,11 +246,16 @@ Rule: same destination, departure within 30 minutes, enough free seats.
 | User story | Test cases |
 |---|---|
 | US-01, US-02 | TC-AUTH-01 – TC-AUTH-04 |
+| US-03 | TC-LIC-01 – TC-LIC-10 |
 | US-04, US-05 | TC-ELG-01 – TC-ELG-05 |
+| US-07 | TC-VEH-01 – TC-VEH-08 |
+| US-08 | TC-VEH-09 – TC-VEH-15 |
 | US-11 | TC-MNT-01 – TC-MNT-04 |
 | US-12 | TC-REC-01 – TC-REC-03 |
 | US-13 | TC-MNT-05 – TC-MNT-07, TC-E2E-03 |
+| US-14 | TC-ALR-01 – TC-ALR-06, TC-E2E-04 |
 | US-15 | TC-MNT-08, TC-MNT-09, TC-E2E-04 |
+| US-18 | TC-LOC-01 – TC-LOC-03, TC-E2E-01 |
 | US-19 | TC-REC-04 – TC-REC-06, TC-E2E-01 |
 | US-20, US-21 | TC-RES-01 – TC-RES-05, TC-RES-07 – TC-RES-10, TC-E2E-01 |
 | US-23, US-24 | TC-POOL-01 – TC-POOL-06, TC-E2E-02 |
@@ -202,7 +265,7 @@ Rule: same destination, departure within 30 minutes, enough free seats.
 | US-38 – US-43 | TC-E2E-01 – TC-E2E-05 |
 | US-46 – US-51 | Verified by the CI pipeline itself (build, coverage report, E2E run) |
 
-Must stories that are not listed yet (US-03, US-07, US-08, US-14, US-18) get their test cases during Sprint 2 together with the SRS.
+Since v0.4 every Must story has at least one test case (US-03, US-07, US-08, US-14 and US-18 were added in Sprint 2). Non-functional test cases are defined in [`nfr_quality_measures.md`](nfr_quality_measures.md) §4.
 
 ## 8. Acceptance Criteria Review (Sprint 1)
 
@@ -217,6 +280,8 @@ QA reviewed all acceptance criteria in `product_backlog.md` for testability and 
 | F5 | The number of earlier full-tank intervals needed before a fuel average is used is not defined. | US-31 | Open |
 | F6 | `POST /reservations` returns several error codes under the same HTTP status: 409 for vehicle problems (`RESERVATION_CONFLICT`, `VEHICLE_MAINTENANCE_DUE`, `VEHICLE_UNAVAILABLE`) and 422 for driver or request problems (`LICENSE_EXPIRED`, `LICENSE_CLASS_MISMATCH`, `SEAT_CAPACITY_EXCEEDED`). Tests check the `code` field, not only the HTTP status. | US-20 | Applied in this plan |
 | F8 | The revised `openapi.yaml` (2026-11-02) returns `409 VEHICLE_MAINTENANCE_DUE` when a blocked vehicle is reserved; test plan v0.2 and `product_backlog.md` US-20 criterion 4 still said 422. Reported by the Backend Engineer in `carpool_reservation_api.md`.    Test plan fixed in v0.3 (#64); backlog fixed by the Product Owner (#66). | US-20 | Fixed | 
+| F9 | The duplicate-licence rule differs between documents: `product_backlog.md` US-03 criterion 2 rejects a **licence number** that is already registered; `openapi.yaml` rejects a second licence of the **same class** for the driver; `srs.md` REQ-ID-03 says "number/class for the same driver". TC-LIC-02 and TC-LIC-03 cover both readings until one is chosen. | US-03 | Open – decision by PO, contract update by Architect |
+| F10 | `POST /drivers/{driverId}/licenses`, `GET /drivers/{driverId}` and `GET /drivers/{driverId}/licenses` define no `403` and no ownership rule, so any signed-in user could add to or read another driver's licences. This conflicts with the KVKK constraint in `system_vision.md` §10 (licence data only for the owner and fleet managers) and NFR-SEC-05. TC-LIC-09 and TC-LIC-10 assume owner or `FLEET_MANAGER` only. | US-03, US-04 | Open – decision by PO and Architect |
 | F7 | Test plan v0.1 used `MAINTENANCE` as a vehicle status and generic HTTP names; aligned with `IN_MAINTENANCE` and the API error codes in v0.2. | Test plan | Fixed |
 
 All other acceptance criteria are measurable and have explicit boundary values.
@@ -261,6 +326,6 @@ Before each sprint submission, QA checks:
 
 ## 13. Planned Updates
 
-- **Sprint 2:** Test cases for the remaining Must stories; non-functional quality measures; close findings F1–F5.
+- **Sprint 2:** Test cases for the remaining Must stories (done in v0.4); non-functional quality measures (`nfr_quality_measures.md` §4); close findings F1–F5, F9 and F10.
 - **Sprint 3:** Coverage report from the CI pipeline; unit and integration tests implemented.
 - **Final:** Integration and E2E test report; SonarQube summary.
