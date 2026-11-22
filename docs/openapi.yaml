@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: FleetSync API
-  version: 0.1.0
+  version: 1.0.0
   summary: Smart fleet management, periodic maintenance and carpooling platform
   description: |
     REST API contract for FleetSync (API-first). This file is the single source of truth:
@@ -21,6 +21,9 @@ info:
     **Roles:** `STAFF` (staff member / driver), `FLEET_MANAGER`, `MAINTENANCE_OFFICER`.
 
     **Change policy:** every change to this file goes through a pull request and needs the Lead Architect's approval (CODEOWNERS).
+    Version 1.0.0 is the contract frozen at the end of Sprint 2 (tag `openapi-v1.0`). From here on, versions follow
+    semantic versioning: wording and example fixes raise the patch (`1.0.1`), backward-compatible additions such as a new
+    optional field or operation raise the minor (`1.1.0`), and removing or renaming anything clients use raises the major (`2.0.0`).
   license:
     name: MIT
     identifier: MIT
@@ -240,16 +243,30 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
         '409':
-          description: A licence of this class is already registered
+          description: |
+            The licence is already registered: the same licence number was submitted again, or the driver already
+            has a licence of this class that has not expired. Registering a renewed licence after the old one of the
+            same class has expired is allowed; the expired record is kept (SRS REQ-ID-03).
           content:
             application/problem+json:
               schema: { $ref: '#/components/schemas/Problem' }
-              example:
-                type: https://fleetsync.local/problems/duplicate-license
-                title: Licence already registered
-                status: 409
-                code: DUPLICATE_LICENSE
-                detail: The driver already has a class B licence on file.
+              examples:
+                sameClass:
+                  summary: Non-expired licence of the same class
+                  value:
+                    type: https://fleetsync.local/problems/duplicate-license
+                    title: Licence already registered
+                    status: 409
+                    code: DUPLICATE_LICENSE
+                    detail: The driver already has a valid class B licence on file (expires 2031-05-14).
+                sameNumber:
+                  summary: Same licence number submitted again
+                  value:
+                    type: https://fleetsync.local/problems/duplicate-license
+                    title: Licence already registered
+                    status: 409
+                    code: DUPLICATE_LICENSE
+                    detail: Licence number 123456 is already registered.
 
   /drivers/{driverId}/licenses/{licenseId}/verify:
     parameters:
@@ -1283,9 +1300,13 @@ paths:
       operationId: listFuelReceipts
       tags: [fuel]
       summary: List a vehicle's fuel receipts
+      description: |
+        Not paginated; bounded by its period instead (NFR-PERF-02). Without `from` and `to` the server returns the
+        last 92 days up to today (Europe/Istanbul). The period may be at most 366 days; a longer period, or `to`
+        before `from`, returns `400 VALIDATION_ERROR`.
       parameters:
-        - $ref: '#/components/parameters/FromDateOptional'
-        - $ref: '#/components/parameters/ToDateOptional'
+        - $ref: '#/components/parameters/ListFromDate'
+        - $ref: '#/components/parameters/ListToDate'
       responses:
         '200':
           description: Receipts, newest first
@@ -1294,6 +1315,7 @@ paths:
               schema:
                 type: array
                 items: { $ref: '#/components/schemas/FuelReceipt' }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
 
@@ -1321,11 +1343,14 @@ paths:
       operationId: listFuelAnomalies
       tags: [fuel]
       summary: List fuel anomalies
-      description: 'Requires role: FLEET_MANAGER.'
+      description: |
+        Requires role: FLEET_MANAGER. Not paginated; bounded by its period instead (NFR-PERF-02). Without `from`
+        and `to` the server returns the last 92 days up to today (Europe/Istanbul). The period may be at most
+        366 days; a longer period, or `to` before `from`, returns `400 VALIDATION_ERROR`.
       parameters:
         - $ref: '#/components/parameters/VehicleIdQuery'
-        - $ref: '#/components/parameters/FromDateOptional'
-        - $ref: '#/components/parameters/ToDateOptional'
+        - $ref: '#/components/parameters/ListFromDate'
+        - $ref: '#/components/parameters/ListToDate'
       responses:
         '200':
           description: Anomalies, newest first
@@ -1334,6 +1359,7 @@ paths:
               schema:
                 type: array
                 items: { $ref: '#/components/schemas/FuelAnomaly' }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
 
@@ -1342,13 +1368,17 @@ paths:
       operationId: listExpenses
       tags: [fuel]
       summary: List non-fuel expenses
+      description: |
+        Not paginated; bounded by its period instead (NFR-PERF-02). Without `from` and `to` the server returns the
+        last 92 days up to today (Europe/Istanbul). The period may be at most 366 days; a longer period, or `to`
+        before `from`, returns `400 VALIDATION_ERROR`.
       parameters:
         - $ref: '#/components/parameters/VehicleIdQuery'
         - name: category
           in: query
           schema: { $ref: '#/components/schemas/ExpenseCategory' }
-        - $ref: '#/components/parameters/FromDateOptional'
-        - $ref: '#/components/parameters/ToDateOptional'
+        - $ref: '#/components/parameters/ListFromDate'
+        - $ref: '#/components/parameters/ListToDate'
       responses:
         '200':
           description: Expenses
@@ -1357,6 +1387,7 @@ paths:
               schema:
                 type: array
                 items: { $ref: '#/components/schemas/Expense' }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
     post:
       operationId: createExpense
@@ -1539,6 +1570,18 @@ components:
       name: to
       in: query
       schema: { type: string, format: date }
+    ListFromDate:
+      name: from
+      in: query
+      description: Start date (inclusive). Default 92 days before `to`. At most 366 days before `to`.
+      schema: { type: string, format: date }
+      example: '2026-08-22'
+    ListToDate:
+      name: to
+      in: query
+      description: End date (inclusive). Default today in Europe/Istanbul.
+      schema: { type: string, format: date }
+      example: '2026-11-22'
 
   headers:
     CsvContentDisposition:
