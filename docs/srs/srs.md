@@ -6,7 +6,7 @@
 | **Accountable (A) / Responsible (R)** | Ahmet Can Vurmaz (Product Owner & Requirements Engineer) |
 | **Contributors** | Mehmet Umut Oğuzcan (`handover`), Deniz Alp Oniki (`reporting`), Ahmet Tarık Orhan (`reservation`, `carpool` review) |
 | **Version** | 1.0 · Sprint 2 |
-| **Related Documents** | [`product_backlog.md`](../product_backlog.md), [`openapi.yaml`](../openapi.yaml), [`test_plans_and_coverage.md`](../test_plans_and_coverage.md), [`traceability_matrix.md`](traceability_matrix.md) |
+| **Related Documents** | [`product_backlog.md`](../product_backlog.md), [`openapi.yaml`](../openapi.yaml), [`test_plans_and_coverage.md`](../test_plans_and_coverage.md), [`traceability_matrix.md`](traceability_matrix.md), [`use_case_diagram.md`](../uml/use_case_diagram.md) |
 
 ---
 
@@ -43,6 +43,8 @@ FleetSync manages institutional vehicles across their operational lifecycle: use
 ---
 
 ## 3. Functional Requirements
+
+> **Use Case Model:** The visual use case diagrams covering all 37 functional user stories (`UC-01`–`UC-37`), actors, `«include»`/`«extend»` relationships, and the jury demo path are maintained in [`docs/uml/use_case_diagram.md`](../uml/use_case_diagram.md).
 
 ### 3.1 Identity, Access & Driver Eligibility (`identity` Module)
 *Owner: Ahmet Can Vurmaz · Stories: US-01 to US-06*
