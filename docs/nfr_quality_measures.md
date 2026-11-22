@@ -127,9 +127,13 @@ Each requirement uses: **ID**, **statement**, **measurable pass criteria**, **ve
 
 **Statement:** List endpoints shall not return unbounded result sets.
 
-**Pass criteria:** The list endpoints that use the `Page` and `Size` parameters in `openapi.yaml` (currently `GET /users`, `GET /vehicles`, `GET /reservations`, `GET /maintenance/alerts`) return at most 20 items by default; `size` above 100 is rejected with `400 VALIDATION_ERROR`. **Decision (Architect, 2026-11-21):** `GET /vehicles/{vehicleId}/fuel-receipts`, `GET /fuel/anomalies` and `GET /expenses` stay unpaginated in release 1 and are bounded by their period instead: all three already accept `from` / `to`, and the web application always sends a period (default: the last 3 months). At the expected scale (`system_vision.md` A6: tens of vehicles) this is a few hundred rows at most. Adding pagination later changes the response from an array to a page object, which is a breaking change (`openapi.yaml` 2.0.0); this is accepted for release 1. Pass criterion for these three: with demo seed data and a 3-month period, the response stays within the PERF-01 read target.
+**Pass criteria:**
+- **Paginated lists** (`Page` and `Size` parameters in `openapi.yaml`: `GET /users`, `GET /vehicles`, `GET /reservations`, `GET /maintenance/alerts`) return at most 20 items by default; `size` above 100 is rejected with `400 VALIDATION_ERROR`.
+- **Period-bounded lists** (`GET /vehicles/{vehicleId}/fuel-receipts`, `GET /fuel/anomalies`, `GET /expenses`). **Decision (Architect, 2026-11-21, revised 2026-11-22):** these stay unpaginated in release 1 and the **server** bounds them by period, whatever the client sends: without `from` and `to` the server uses the last 92 days up to today (Europe/Istanbul); a period longer than 366 days, or `to` before `from`, is rejected with `400 VALIDATION_ERROR`. This is part of the contract (`openapi.yaml`, parameters `ListFromDate` / `ListToDate`). At the expected scale (`system_vision.md` A6: tens of vehicles) a 366-day period is a few hundred rows at most, within the PERF-01 read target. Adding pagination later would change the response from an array to a page object, a breaking change (`openapi.yaml` 2.0.0); this is accepted for release 1.
 
-**Verification:** Integration test per list endpoint with `size=101` and with no parameters *(new: TC-NFR-PERF-02)*. **Target:** Sprint 3.
+**Verification** *(new: TC-NFR-PERF-02)*, **Target:** Sprint 3:
+- Paginated lists: request with no parameters → at most 20 items; request with `size=101` → `400 VALIDATION_ERROR`.
+- Period-bounded lists (these do not accept `size`): seed data spread over more than a year; request with no `from` / `to` → only items of the last 92 days; `from`/`to` spanning 366 days → `200`; spanning 367 days → `400 VALIDATION_ERROR`; `to` before `from` → `400 VALIDATION_ERROR`.
 
 #### NFR-PERF-03 · Web page load
 
@@ -319,7 +323,7 @@ These requirements turn `system_vision.md` §10 (Security, KVKK) and ADR-005 int
 | Add measurable QA metrics (section 4) | Abdullah Tecimen | Drafted — in review |
 | Approve QA numeric targets (PERF-01 load profile, 70% module coverage, WCAG 2.1 AA) | Ali Eren Kurt + Ahmet Can Vurmaz | Approved by the Architect — 20 virtual users fit assumption A6; 70% for the business-rule modules is a team target reported per module, the CI gate stays at 50%; WCAG 2.1 AA for the demo screens. PO approval pending. |
 | Confirm performance targets are realistic for the reservation and recommendation queries | Ahmet Tarık Orhan | Open |
-| Decide pagination for fuel receipts, anomalies and expenses (PERF-02) | Ali Eren Kurt | Decided — no pagination in release 1; bounded by `from` / `to` (NFR-PERF-02) |
+| Decide pagination for fuel receipts, anomalies and expenses (PERF-02) | Ali Eren Kurt | Decided — no pagination in release 1; the server bounds them to a default of 92 days and a maximum of 366 days (NFR-PERF-02, `openapi.yaml`) |
 | Check Figma palette contrast and status text (ACC-01, ACC-02) | Mustafa Düşünceli + Abdullah Tecimen | Open |
 | Add the *(new)* test case IDs from section 4 to the test plan | Abdullah Tecimen | Open |
 | Reconcile with SRS and traceability | Ahmet Can Vurmaz | Open |

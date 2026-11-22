@@ -1283,9 +1283,13 @@ paths:
       operationId: listFuelReceipts
       tags: [fuel]
       summary: List a vehicle's fuel receipts
+      description: |
+        Not paginated; bounded by its period instead (NFR-PERF-02). Without `from` and `to` the server returns the
+        last 92 days up to today (Europe/Istanbul). The period may be at most 366 days; a longer period, or `to`
+        before `from`, returns `400 VALIDATION_ERROR`.
       parameters:
-        - $ref: '#/components/parameters/FromDateOptional'
-        - $ref: '#/components/parameters/ToDateOptional'
+        - $ref: '#/components/parameters/ListFromDate'
+        - $ref: '#/components/parameters/ListToDate'
       responses:
         '200':
           description: Receipts, newest first
@@ -1294,6 +1298,7 @@ paths:
               schema:
                 type: array
                 items: { $ref: '#/components/schemas/FuelReceipt' }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
 
@@ -1321,11 +1326,14 @@ paths:
       operationId: listFuelAnomalies
       tags: [fuel]
       summary: List fuel anomalies
-      description: 'Requires role: FLEET_MANAGER.'
+      description: |
+        Requires role: FLEET_MANAGER. Not paginated; bounded by its period instead (NFR-PERF-02). Without `from`
+        and `to` the server returns the last 92 days up to today (Europe/Istanbul). The period may be at most
+        366 days; a longer period, or `to` before `from`, returns `400 VALIDATION_ERROR`.
       parameters:
         - $ref: '#/components/parameters/VehicleIdQuery'
-        - $ref: '#/components/parameters/FromDateOptional'
-        - $ref: '#/components/parameters/ToDateOptional'
+        - $ref: '#/components/parameters/ListFromDate'
+        - $ref: '#/components/parameters/ListToDate'
       responses:
         '200':
           description: Anomalies, newest first
@@ -1334,6 +1342,7 @@ paths:
               schema:
                 type: array
                 items: { $ref: '#/components/schemas/FuelAnomaly' }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
 
@@ -1342,13 +1351,17 @@ paths:
       operationId: listExpenses
       tags: [fuel]
       summary: List non-fuel expenses
+      description: |
+        Not paginated; bounded by its period instead (NFR-PERF-02). Without `from` and `to` the server returns the
+        last 92 days up to today (Europe/Istanbul). The period may be at most 366 days; a longer period, or `to`
+        before `from`, returns `400 VALIDATION_ERROR`.
       parameters:
         - $ref: '#/components/parameters/VehicleIdQuery'
         - name: category
           in: query
           schema: { $ref: '#/components/schemas/ExpenseCategory' }
-        - $ref: '#/components/parameters/FromDateOptional'
-        - $ref: '#/components/parameters/ToDateOptional'
+        - $ref: '#/components/parameters/ListFromDate'
+        - $ref: '#/components/parameters/ListToDate'
       responses:
         '200':
           description: Expenses
@@ -1357,6 +1370,7 @@ paths:
               schema:
                 type: array
                 items: { $ref: '#/components/schemas/Expense' }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
     post:
       operationId: createExpense
@@ -1539,6 +1553,18 @@ components:
       name: to
       in: query
       schema: { type: string, format: date }
+    ListFromDate:
+      name: from
+      in: query
+      description: Start date (inclusive). Default 92 days before `to`. At most 366 days before `to`.
+      schema: { type: string, format: date }
+      example: '2026-08-22'
+    ListToDate:
+      name: to
+      in: query
+      description: End date (inclusive). Default today in Europe/Istanbul.
+      schema: { type: string, format: date }
+      example: '2026-11-22'
 
   headers:
     CsvContentDisposition:
