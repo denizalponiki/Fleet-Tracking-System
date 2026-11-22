@@ -142,6 +142,28 @@ In the prototype, the main buttons of the demo flow and the sidebar items link t
 
 Every E9 story (US-38 to US-45) has at least one frame. The role-based sidebar of US-38 appears on every screen except the login.
 
+### 6.5 Screenshots
+
+PNG exports of every frame are kept in [`ui/screenshots/`](ui/screenshots/), so the prototype can be reviewed without opening Figma. They were exported from the Figma file on 2026-11-22; if a frame changes, export it again.
+
+| Staff | Maintenance officer | Fleet manager |
+|---|---|---|
+| [S1 Login](ui/screenshots/s1-login.png) | [M1 Maintenance alerts](ui/screenshots/m1-maintenance-alerts.png) | [F1 Fleet dashboard](ui/screenshots/f1-fleet-dashboard.png) |
+| [S2 Trip request](ui/screenshots/s2-trip-request.png) | [M2 Record service](ui/screenshots/m2-record-service.png) | [F2 Vehicle status](ui/screenshots/f2-vehicle-status.png) |
+| [S3 Recommendation](ui/screenshots/s3-recommendation.png) | [M3 Maintenance calendar](ui/screenshots/m3-maintenance-calendar.png) | [F3 Cost report](ui/screenshots/f3-cost-report.png) |
+| [S4 Reservation confirmed](ui/screenshots/s4-reservation-confirmed.png) | | |
+| [S5 Ride matches](ui/screenshots/s5-ride-matches.png) | | |
+| [S6 Pickup checklist](ui/screenshots/s6-pickup-checklist.png) | | |
+| [S7 Return checklist](ui/screenshots/s7-return-checklist.png) | | |
+| [S8 Return result](ui/screenshots/s8-return-result.png) | | |
+| [S9 Fuel receipts](ui/screenshots/s9-fuel-receipts.png) | | |
+
+Shared components: [`00-components-overview.png`](ui/screenshots/00-components-overview.png).
+
+The recommendation screen, where a blocked vehicle is shown with its reason (demo step 2):
+
+![S3 Vehicle recommendation](ui/screenshots/s3-recommendation.png)
+
 ## 7. User-flow diagrams
 
 The diagrams show the screens (rectangles), the decisions the backend makes (diamonds) and the error paths the user can meet. Error codes are those of `openapi.yaml`.
