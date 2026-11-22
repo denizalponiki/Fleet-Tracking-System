@@ -2,9 +2,9 @@
 
 | | |
 |---|---|
-| Course | SENG 321 Software Engineering · Sprint 1 |
+| Course | SENG 321 Software Engineering · Sprint 2 |
 | Owner | Ahmet Tarık Orhan, Implementation & Integration Engineer (Backend & API) |
-| Version | 0.1 · Sprint 1 |
+| Version | 1.0 · Sprint 2 |
 | Related documents | `openapi.yaml`, `api_usage.md`, `product_backlog.md` (Epics E4, E5), `system_vision.md` §8 |
 
 ## Endpoints
@@ -49,9 +49,17 @@ Shared responses on these operations:
 
 **Ride sharing.** A request matches a trip with the same destination, departure within the tolerance window (default 30 minutes) and enough free seats. The trip must have `allowRideSharing` set. A departure 31 minutes away, a full vehicle, or sharing turned off by the driver is not returned by `GET /rides/matches`. Joining a ride that has a free seat returns `201` and `seatsAvailable` drops by one. A full ride returns `422 SEAT_CAPACITY_EXCEEDED`. Joining again returns `409 ALREADY_JOINED`. Leaving before the trip starts returns `204` and frees the seat. The passenger, the reservation owner or a fleet manager may do this. Removing a passenger from an `ACTIVE` ride returns `409 INVALID_RESERVATION_STATE`. Anyone else receives `403 FORBIDDEN`.
 
+## Sprint 2 review
+
+Reviewed on 22 November 2026 against `openapi.yaml` on `develop`.
+
+The reservation and carpool operations, their error codes and the Prism command are unchanged by the Sprint 2 contract updates. `GET /reservations` stays paginated: the default page size is 20, and `size` above 100 returns `400 VALIDATION_ERROR`. The contract freeze sets `info.version` to `1.0.0` (#289). These notes use the same version.
+
+The performance targets in `docs/nfr_quality_measures.md` stay as written for this module: read endpoints at p95 ≤ 500 ms, `POST /reservations` at p95 ≤ 800 ms, and `GET /vehicles/recommendations` at p95 ≤ 1 s, with 20 concurrent users on the demo seed data. Those numbers are realistic for a fleet of tens of vehicles, so they are not changed.
+
 ## Mock server for frontend development
 
-Until the backend is implemented, the frontend uses a Prism mock server generated from `docs/openapi.yaml`.
+Until the backend is implemented, the frontend uses a Prism mock server generated from `docs/openapi.yaml`. Rechecked on 22 November 2026: the reservation and carpool paths are still taken from that file, so the command below is unchanged.
 
 ```bash
 npx @stoplight/prism-cli mock docs/openapi.yaml
