@@ -72,6 +72,6 @@ Note: Prism answers a request body that does not match the schema with 422, whil
 
 ## Next steps
 
-- At the end of Sprint 2 the contract is tagged `v1.0.0`. After that, breaking changes require a new version.
+- At the end of Sprint 2 the contract is frozen as version `1.0.0` (`info.version`, tag `openapi-v1.0` on `main`). After that it follows semantic versioning: wording fixes are patches, backward-compatible additions are minor versions, and breaking changes require a new major version (see the change policy in `openapi.yaml`).
 - The backend (FastAPI) generates its Pydantic request/response models from this file with `datamodel-code-generator`, and a contract test in CI compares the routes FastAPI exposes (`app.openapi()`) with this file.
 - The frontend generates its types with `openapi-typescript`.
