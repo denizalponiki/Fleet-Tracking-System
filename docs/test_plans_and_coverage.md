@@ -4,7 +4,7 @@
 |---|---|
 | Course | SENG 321 Software Engineering · Sprint 2 |
 | Owner | Abdullah Tecimen – Quality Assurance & Test Automation Engineer |
-| Version | 0.5 · Sprint 2 (F1, F2, F9, F10 closed; F3–F5 decided with report and fuel-anomaly test cases; aligned with `openapi.yaml`, `docs/srs/srs.md` and ADR-006) |
+| Version | 0.6 · Sprint 2 (non-functional test cases from `nfr_quality_measures.md` §4 added; F1, F2, F9, F10 closed; F3–F5 decided) |
 | Related documents | [`product_backlog.md`](product_backlog.md), [`openapi.yaml`](openapi.yaml), [`system_vision.md`](system_vision.md), [`raci_matrix.md`](raci_matrix.md), [`srs/srs.md`](srs/srs.md), [`nfr_quality_measures.md`](nfr_quality_measures.md) |
 
 ---
@@ -83,6 +83,7 @@ Boundary-value tests around the oil change rule (interval 10,000 km, warning thr
 | TC-MNT-08 | US-15 | Officer records the oil change for an `IN_MAINTENANCE` vehicle | Alert `RESOLVED`; interval restarts; vehicle `AVAILABLE` | I |
 | TC-MNT-09 | US-15 | Service recorded with odometer lower than the vehicle's odometer | `422` (mileage lower than recorded) | I |
 | TC-MNT-10 | US-09 | Manager sets an `IN_MAINTENANCE` vehicle to `AVAILABLE` manually | `409 INVALID_STATUS_TRANSITION` | I |
+| TC-MNT-11 | US-13 | Return reaches the 10,000 km threshold while alert creation is forced to fail (fault injection, NFR-REL-02) | Whole return rolled back: no alert, reservation stays `ACTIVE`, vehicle stays `IN_USE`, odometer unchanged | I |
 
 ### 6.2 Trip Blocking and Vehicle Recommendation
 
@@ -111,6 +112,7 @@ Rule: a vehicle is blocked when remaining km < estimated trip km + 100 km safety
 | TC-RES-08 | US-20 | Vehicle that is `IN_MAINTENANCE` or `OUT_OF_SERVICE` reserved directly through the API | `409 VEHICLE_UNAVAILABLE` | I |
 | TC-RES-09 | US-20 | Driver's licence expires before the trip ends | `422 LICENSE_EXPIRED` | I |
 | TC-RES-10 | US-20 | Vehicle with fewer seats than requested reserved directly through the API | `422 SEAT_CAPACITY_EXCEEDED` | I |
+| TC-RES-11 | US-20 | Two concurrent `POST /reservations` for the same vehicle and period, repeated 20 times (NFR-REL-01, ADR-004) | Each run: exactly one `201` and one `409 RESERVATION_CONFLICT`; afterwards an SQL check finds 0 overlapping `CONFIRMED`/`ACTIVE` reservations | I |
 
 ### 6.4 Driver Eligibility
 
@@ -169,6 +171,7 @@ Rule: same destination, departure within 30 minutes, enough free seats.
 | TC-POOL-04 | US-24 | Join a ride with a free seat | `201`; free seats decrease by one | I |
 | TC-POOL-05 | US-24 | Join a full ride | `422 SEAT_CAPACITY_EXCEEDED` | I |
 | TC-POOL-06 | US-24 | Join a ride already joined | `409 ALREADY_JOINED` | I |
+| TC-POOL-07 | US-24 | Two users join concurrently for the last free seat (NFR-REL-01, ADR-004) | One `201` and one `422 SEAT_CAPACITY_EXCEEDED`; passenger count never exceeds free seats | I |
 
 ### 6.8 Authentication and Authorisation
 
@@ -277,6 +280,18 @@ Rules (`srs.md` REQ-REP-02 and REQ-REP-03, F3 and F4):
 | TC-E2E-04 | US-43, US-15 | Maintenance officer sees the alert and records the service | Alert `RESOLVED`; vehicle `AVAILABLE` | E |
 | TC-E2E-05 | US-45, US-34–36 | Fleet manager opens reports for the period | Cost, carbon and utilisation shown | E |
 
+### 6.15 Non-Functional Test Cases
+
+Test cases named in [`nfr_quality_measures.md`](nfr_quality_measures.md) §4. The other NFRs are verified by extending the functional test cases above (for example NFR-SEC-01 extends TC-AUTH-03 to every protected operation) or by the reports listed in the NFR document (Locust, Lighthouse, coverage, SonarQube).
+
+| ID | NFR | Scenario | Expected result | Level |
+|----|-----|----------|-----------------|-------|
+| TC-NFR-PERF-02 | PERF-02 | Paginated lists (`GET /users`, `/vehicles`, `/reservations`, `/maintenance/alerts`) without parameters and with `size=101`; period-bounded lists (`GET /vehicles/{vehicleId}/fuel-receipts`, `/fuel/anomalies`, `/expenses`) with seed data spread over more than a year | Paginated: at most 20 items by default, `size=101` → `400 VALIDATION_ERROR`. Period-bounded: without `from`/`to` only the last 92 days; 366-day period → `200`; 367 days or `to` before `from` → `400 VALIDATION_ERROR` (#291) | I |
+| TC-NFR-SEC-03 | SEC-03 | Create a user, then log in with an unknown email and with a wrong password; inspect the stored user | Password stored only as an Argon2id hash; password shorter than 8 characters → `400 VALIDATION_ERROR`; no response contains a password or hash field; both failed logins return the same `401 INVALID_CREDENTIALS` body | U, I |
+| TC-NFR-SEC-04 | SEC-04 | Malformed input and `' OR 1=1 --` in text fields and query parameters of login, reservation and fuel receipt endpoints | `400 VALIDATION_ERROR` with field-level `errors`, or the value is stored as plain text; the result set never changes; no error body contains a stack trace, SQL text, file path or library name | I |
+| TC-NFR-SEC-05 | SEC-05 | Licence data requested by the owner, a fleet manager and another staff member; logs collected during the E2E run | Owner and fleet manager see licence details; another staff member gets `403 FORBIDDEN`; logs contain no password, JWT or `JWT_SECRET` | I |
+| TC-NFR-ACC-01 | ACC-01 | `axe-core` scan from the Playwright suite on the login, trip request, ride join, checklist, maintenance alerts and reports screens | 0 serious or critical violations; text contrast ≥ 4.5:1 (prototype palette already checked in `ui_ux_flow_and_dashboard.md` §8) | E |
+
 ## 7. Traceability: Must Stories and Their Test Cases
 
 | User story | Test cases |
@@ -288,13 +303,13 @@ Rules (`srs.md` REQ-REP-02 and REQ-REP-03, F3 and F4):
 | US-08 | TC-VEH-09 – TC-VEH-15 |
 | US-11 | TC-MNT-01 – TC-MNT-04 |
 | US-12 | TC-REC-01 – TC-REC-03 |
-| US-13 | TC-MNT-05 – TC-MNT-07, TC-ALR-07, TC-E2E-03 |
+| US-13 | TC-MNT-05 – TC-MNT-07, TC-MNT-11, TC-ALR-07, TC-E2E-03 |
 | US-14 | TC-ALR-01 – TC-ALR-06, TC-E2E-04 |
 | US-15 | TC-MNT-08, TC-MNT-09, TC-E2E-04 |
 | US-18 | TC-LOC-01 – TC-LOC-03, TC-E2E-01 |
 | US-19 | TC-REC-04 – TC-REC-06, TC-E2E-01 |
-| US-20, US-21 | TC-RES-01 – TC-RES-05, TC-RES-07 – TC-RES-10, TC-E2E-01 |
-| US-23, US-24 | TC-POOL-01 – TC-POOL-06, TC-E2E-02 |
+| US-20, US-21 | TC-RES-01 – TC-RES-05, TC-RES-07 – TC-RES-11, TC-E2E-01 |
+| US-23, US-24 | TC-POOL-01 – TC-POOL-07, TC-E2E-02 |
 | US-26, US-27 | TC-HND-01 – TC-HND-06, TC-E2E-03 |
 | US-29 | TC-FUEL-01 – TC-FUEL-04 |
 | US-34 | TC-REP-16, TC-E2E-05 (cost calculation tests follow with US-32 expenses) |
@@ -304,7 +319,7 @@ Rules (`srs.md` REQ-REP-02 and REQ-REP-03, F3 and F4):
 | US-38 – US-43 | TC-E2E-01 – TC-E2E-05; US-43 also TC-ALR-07 |
 | US-46 – US-51 | Verified by the CI pipeline itself (build, coverage report, E2E run) |
 
-Since v0.4 every Must story has at least one test case (US-03, US-07, US-08, US-14 and US-18 were added in Sprint 2). Non-functional test cases are defined in [`nfr_quality_measures.md`](nfr_quality_measures.md) §4.
+Since v0.4 every Must story has at least one test case (US-03, US-07, US-08, US-14 and US-18 were added in Sprint 2). Non-functional requirements are defined in [`nfr_quality_measures.md`](nfr_quality_measures.md) §4; the test cases they name are in §6.15 (TC-NFR-…) and in §6.1, §6.3 and §6.7 (TC-MNT-11, TC-RES-11, TC-POOL-07).
 
 ## 8. Acceptance Criteria Review (Sprint 1)
 
@@ -365,6 +380,6 @@ Before each sprint submission, QA checks:
 
 ## 13. Planned Updates
 
-- **Sprint 2:** Test cases for the remaining Must stories (done in v0.4); non-functional quality measures (`nfr_quality_measures.md` §4); F1, F2, F9 and F10 closed in v0.5; F3–F5 decided, to be marked closed when the SRS contains the remaining PO decisions.
+- **Sprint 2:** Test cases for the remaining Must stories (done in v0.4); non-functional quality measures (`nfr_quality_measures.md` §4); F1, F2, F9 and F10 closed in v0.5; NFR test cases added in v0.6; F3–F5 decided, to be marked closed when the SRS contains the remaining PO decisions.
 - **Sprint 3:** Coverage report from the CI pipeline; unit and integration tests implemented.
 - **Final:** Integration and E2E test report; SonarQube summary.
