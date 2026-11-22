@@ -262,7 +262,7 @@ Three colours were below 4.5:1 in the first draft and were darkened: weekend day
 
 Status text: every vehicle, reservation and alert status in the prototype is written as text (`AVAILABLE`, `IN_MAINTENANCE`, `DUE`, `DUE_SOON`, …) next to its colour. Every form field has a visible label.
 
-Not checked in Figma: keyboard use and focus order (walkthrough in Final), and the automated `axe-core` scan (Final). Review by QA (Abdullah Tecimen) is still open.
+Not checked in Figma: keyboard use and focus order (walkthrough in Final), and the automated `axe-core` scan (Final). Reviewed by QA (Abdullah Tecimen, 2026-11-22): every ratio in the table was recalculated with the WCAG 2.1 formula and confirmed; the status chip colours were taken from the Figma file as stated.
 
 ## 9. Data in the prototype
 
