@@ -91,6 +91,19 @@ Each member presented their Sprint 2 tasks; the distribution in §4 and §5 was 
 | Ahmet Tarık Orhan | Sequence diagram input, reservation tables, OpenAPI v1.0 review | – |
 | Mustafa Düşünceli | Figma prototypes and user-flow diagrams | – |
 
+### Stand-up · 2026-11-22 (async, WhatsApp)
+Present: all seven members · Absent: none
+
+| Member | Done (2026-11-21 and today) | Next | Blocker |
+|---|---|---|---|
+| Ahmet Can Vurmaz | Backlog corrections (US-11, US-12, US-31, F1–F5 decisions); detailed SRS (`srs/srs.md`) and traceability matrix as PRs; licence renewal rule (#262) and Abdullah's F3–F5 questions (carbon, working hours, fuel anomaly) settled and written into the documents | Link the use case diagram from the SRS (PR #294); follow his open PRs to merge; update the traceability matrix with any new test IDs before the `main` merge | None; waiting for reviews and merges |
+| Mehmet Umut Oğuzcan | Sprint 2 plan, IMP-06 and milestone (#257); Sprint 1 retrospective (#261); `TripCompletedEvent` contract agreed with the Architect, `trip_completed_event.md` merged into `domain_events.md`, C4 and UML links updated (#270); review of the handover screens S6–S8 on #292; approvals on #289 and #291; review and merge of #294 | Follow #289 and #291 to merge; final sprint report and `CONTRIBUTIONS.md` update | None; #289 and #291 wait for the code-owner review |
+| Ali Eren Kurt | C4, UML, ER and use case diagrams; ADR-002 to ADR-005 and other architecture decisions; API contract frozen as v1.0.0; backend skeleton for Sprint 3; reviewed issues and PRs that needed his approval | PR approvals | None |
+| Abdullah Tecimen | Edited the files that needed changes; settled the open decisions with teammates and updated the documents | Available to help teammates on request | None |
+| Deniz Alp Oniki | Deployment architecture review and demo seed data design (#283, #285 merged); reporting requirements and operational NFRs; review of the QA test cases; approved #289; requested changes on #291 for two technical inconsistencies; closed #282 and #284 | Track the open PRs before the release | Waiting for the fixes on #291 and the remaining Sprint 2 merges |
+| Ahmet Tarık Orhan | Closed the Sprint 2 reviews: approved #245, #249, #274, #278; reservation, carpool and performance input on #160, #161, #162, #237, #246 | Review #289 and #291; open one issue and one PR to bring `carpool_reservation_api.md` to Sprint 2 and mark his performance row in the NFR as Confirmed | None |
+| Mustafa Düşünceli | Issue #255; Figma file and shared components; Staff (8), Maintenance Officer (3) and Fleet Manager (3) screens; US-44 fuel receipt screen (15 screens in total); clickable prototype; contrast fixed against NFR-ACC-01; `ui_ux_flow_and_dashboard.md` v0.2 (Figma link, screen–story mapping, four user flows, screenshots) in PR #292; frontend review and approval of #289 | Apply the review comments on #292; merge after approval | #292 waited for the code-owner review of Ali Eren (later merged with the review fixes) |
+
 <!-- Copy this block for every stand-up. Write only what was actually said. -->
 
 ### Stand-up · YYYY-MM-DD
