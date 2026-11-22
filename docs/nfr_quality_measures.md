@@ -322,7 +322,7 @@ These requirements turn `system_vision.md` §10 (Security, KVKK) and ADR-005 int
 | Review backup/restore method (DD-4) | Deniz Alp Oniki + Abdullah Tecimen | Open |
 | Add measurable QA metrics (section 4) | Abdullah Tecimen | Drafted — in review |
 | Approve QA numeric targets (PERF-01 load profile, 70% module coverage, WCAG 2.1 AA) | Ali Eren Kurt + Ahmet Can Vurmaz | Approved by the Architect — 20 virtual users fit assumption A6; 70% for the business-rule modules is a team target reported per module, the CI gate stays at 50%; WCAG 2.1 AA for the demo screens. PO approval pending. |
-| Confirm performance targets are realistic for the reservation and recommendation queries | Ahmet Tarık Orhan | Open |
+| Confirm performance targets are realistic for the reservation and recommendation queries | Ahmet Tarık Orhan | Confirmed — targets kept: reads ≤ 500 ms, `POST /reservations` ≤ 800 ms, `GET /vehicles/recommendations` ≤ 1 s |
 | Decide pagination for fuel receipts, anomalies and expenses (PERF-02) | Ali Eren Kurt | Decided — no pagination in release 1; the server bounds them to a default of 92 days and a maximum of 366 days (NFR-PERF-02, `openapi.yaml`) |
 | Check Figma palette contrast and status text (ACC-01, ACC-02) | Mustafa Düşünceli + Abdullah Tecimen | Open |
 | Add the *(new)* test case IDs from section 4 to the test plan | Abdullah Tecimen | Open |
