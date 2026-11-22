@@ -4,7 +4,7 @@
 |---|---|
 | Course | SENG 321 Software Engineering · Sprint 2 |
 | Owner | Mustafa Düşünceli · Implementation & Integration Engineer (Frontend & UI) |
-| Version | 0.2 · Sprint 2 · 2026-11-22 |
+| Version | 0.2.1 · Sprint 2 · 2026-11-22 (review of PR #292 applied) |
 | Issue | #255 (Sprint 2: Figma prototypes and user-flow diagrams) |
 | Related documents | `system_vision.md`, `srs/srs.md`, `product_backlog.md` (Epic E9), `openapi.yaml`, `nfr_quality_measures.md`, `adr/ADR-003-error-format-rfc9457.md`, `adr/ADR-006-notifications-and-csv-export.md`, `raci_matrix.md` |
 
@@ -109,7 +109,7 @@ The recommendation screen must distinguish suitable vehicles from blocked vehicl
 
 Under each screen, a "Developer notes" text lists the API operations of the screen and which values are sample data (§9). The notes are outside the frames, so the screens themselves stay clean.
 
-In the prototype, the main buttons of the demo flow and the sidebar items link to the next screen. Error and result states (for example a refused pickup or a saved service record) are drawn on the same screen as banners, labelled as examples.
+In the prototype, the main buttons of the demo flow and the sidebar items link to the next screen. Error and result states (for example a refused pickup or a saved service record) are drawn on the same screen as banners. Error banners show the `title` and `detail` returned by the API (ADR-003), one banner per error code.
 
 ### 6.3 Visual language and components
 
@@ -129,9 +129,10 @@ In the prototype, the main buttons of the demo flow and the sidebar items link t
 | [S3](https://www.figma.com/design/gBbTn4ZmQc5GBa8yC9WRe8?node-id=4-97) | Vehicle recommendation | STAFF | US-40 | `GET /vehicles/recommendations` |
 | [S4](https://www.figma.com/design/gBbTn4ZmQc5GBa8yC9WRe8?node-id=4-171) | Reservation confirmed | STAFF | US-40 | `POST /reservations`, `POST /reservations/{reservationId}/cancel` |
 | [S5](https://www.figma.com/design/gBbTn4ZmQc5GBa8yC9WRe8?node-id=5-106) | Ride matches (colleague) | STAFF | US-41 | `GET /rides/matches`, `POST /reservations/{reservationId}/passengers` |
-| [S6](https://www.figma.com/design/gBbTn4ZmQc5GBa8yC9WRe8?node-id=5-171) | Pickup checklist | STAFF | US-42 | `GET /checklist-templates`, `POST /reservations/{reservationId}/pickup` |
-| [S7](https://www.figma.com/design/gBbTn4ZmQc5GBa8yC9WRe8?node-id=5-236) | Return checklist | STAFF | US-42 | `POST /reservations/{reservationId}/return` |
-| [S8](https://www.figma.com/design/gBbTn4ZmQc5GBa8yC9WRe8?node-id=5-303) | Return result + maintenance alert | STAFF | US-42, US-43 | `ReturnResult` of the return call |
+| [S6](https://www.figma.com/design/gBbTn4ZmQc5GBa8yC9WRe8?node-id=5-171) | Pickup checklist | STAFF | US-42 (US-26) | `GET /checklist-templates`, `POST /reservations/{reservationId}/pickup` |
+| [S7](https://www.figma.com/design/gBbTn4ZmQc5GBa8yC9WRe8?node-id=5-236) | Return checklist with damage report | STAFF | US-42 (US-27, US-28) | `POST /reservations/{reservationId}/return` (`damages[]` as `NewDamage`: area, severity, description) |
+| [S8](https://www.figma.com/design/gBbTn4ZmQc5GBa8yC9WRe8?node-id=5-303) | Return result + maintenance alert | STAFF | US-42 (US-27), US-43 | `ReturnResult` of the return call: alert `OPEN`, `vehicleStatus` `IN_MAINTENANCE` |
+| [S8b](https://www.figma.com/design/gBbTn4ZmQc5GBa8yC9WRe8?node-id=96-1018) | Return result – severe damage (variant) | STAFF | US-42 (US-28) | `ReturnResult.vehicleStatus` `OUT_OF_SERVICE` |
 | [S9](https://www.figma.com/design/gBbTn4ZmQc5GBa8yC9WRe8?node-id=70-1177) | Fuel receipts | STAFF | US-44 | `POST /fuel-receipts`, `GET /vehicles/{vehicleId}/fuel-receipts` |
 | [M1](https://www.figma.com/design/gBbTn4ZmQc5GBa8yC9WRe8?node-id=44-126) | Maintenance alerts | MAINTENANCE_OFFICER | US-43 | `GET /maintenance/alerts` |
 | [M2](https://www.figma.com/design/gBbTn4ZmQc5GBa8yC9WRe8?node-id=44-286) | Record service | MAINTENANCE_OFFICER | US-43 | `POST /maintenance/records` |
@@ -156,6 +157,7 @@ PNG exports of every frame are kept in [`ui/screenshots/`](ui/screenshots/), so 
 | [S6 Pickup checklist](ui/screenshots/s6-pickup-checklist.png) | | |
 | [S7 Return checklist](ui/screenshots/s7-return-checklist.png) | | |
 | [S8 Return result](ui/screenshots/s8-return-result.png) | | |
+| [S8b Severe damage](ui/screenshots/s8b-return-severe-damage.png) | | |
 | [S9 Fuel receipts](ui/screenshots/s9-fuel-receipts.png) | | |
 
 Shared components: [`00-components-overview.png`](ui/screenshots/00-components-overview.png).
@@ -201,9 +203,11 @@ flowchart TD
     PV -- yes --> A["Reservation ACTIVE, vehicle IN_USE"]
     A --> RT["S7 Return checklist:<br/>odometer, fuel level, items, damages"]
     RT --> RV{"Return accepted?"}
-    RV -- "no: 422" --> RT
+    RV -- "no: 422 ODOMETER_DECREASED" --> RT
     RV -- yes --> RR["S8 Return result (ReturnResult)"]
-    RR --> KM{"kmLimitExceeded?"}
+    RR --> SD{"SEVERE damage reported?"}
+    SD -- yes --> OS["S8b Vehicle OUT_OF_SERVICE"]
+    SD -- no --> KM{"kmLimitExceeded?"}
     KM -- yes --> W["Warning shown"]
     KM -- no --> AL
     W --> AL{"maintenanceAlerts returned?"}
@@ -271,7 +275,7 @@ Not checked in Figma: keyboard use and focus order (walkthrough in Final), and t
 | Consumption anomaly (14.6 vs 10.8 L/100 km, +35.2 %) and the "tank holds 90 L" error | `openapi.yaml` `FuelAnomaly` schema examples and the 422 `FUEL_EXCEEDS_TANK` example |
 | Maintenance thresholds (10,000 km oil change, 1,000 km warning) | `srs/srs.md` REQ-MNT-01 |
 | User "Elif Demir", destination "Konya Campus" | `openapi.yaml` examples |
-| The colleague, the maintenance officer and the fleet manager users, the `DUE_SOON` alert of 06 FS 101, calendar dates, vehicle counts, and the zero values of 06 FS 101 and 06 FS 103 in the reports | Sample data drawn for the prototype; marked in the developer notes of each screen |
+| The damage in S8b, the colleague, the maintenance officer and the fleet manager users, the `DUE_SOON` alert of 06 FS 101, calendar dates, vehicle counts, and the zero values of 06 FS 101 and 06 FS 103 in the reports | Sample data drawn for the prototype; marked in the developer notes of each screen |
 
 ## 10. Next steps
 
