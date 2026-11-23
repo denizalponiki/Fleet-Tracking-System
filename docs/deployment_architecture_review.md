@@ -15,6 +15,7 @@ This is a **design and documentation review**, not a claim that deployment, TLS,
 
 - [UML deployment diagram](uml/deployment_diagram.md) — desired topology and DD-1 through DD-4
 - [Operational and QA NFRs](nfr_quality_measures.md) — NFR-OPS-01 through OPS-08, especially OPS-02, OPS-04 and OPS-08
+- [DD-4 backup/restore verification design](backup_restore_design.md) — proposed logical backup and isolated restore evidence plan (not executed)
 - [Docker Compose](../docker-compose.yml) — currently only PostgreSQL with a named `postgres_data` volume
 - [Environment example](../.env.example) — currently PostgreSQL values only
 - [Backend settings](../backend/app/shared/config.py) — `jwt_secret` required without a default; `database_url` configurable
@@ -27,7 +28,7 @@ This is a **design and documentation review**, not a claim that deployment, TLS,
 | **DD-1** | Diagram proposes `web` (Nginx), `api` (FastAPI) and `db` (PostgreSQL) on one Docker Compose host. Current `docker-compose.yml` contains **only** `db`. The named network, readiness checks and web/API services depicted are target-state design, not active infrastructure. | Confirm the topology as the target architecture and preserve the Sprint 3 implementation boundary (US-46). Do not add app containers in Sprint 2. | DevOps + Architect — architecture confirmation pending; implementation Sprint 3 |
 | **DD-2** | Diagram depicts local HTTP at `http://localhost:8080` and HTTPS `:443` when configured; team transport decision remains open. | Proposed rule for review: localhost-only demo with synthetic data may use HTTP; anything externally exposed should use HTTPS with a valid certificate. **Do not mark this accepted until the team/architect decides.** | Team / Architect / DevOps — **decision pending** |
 | **DD-3** | The backend settings use a required `JWT_SECRET` value (Pydantic `jwt_secret`, no default), but the current `.env.example` contains only PostgreSQL variables. The diagram already names `JWT_SECRET`. | Confirm the exact `JWT_SECRET` and `DATABASE_URL` setting names with backend owner. Document that `.env.example` needs non-secret placeholders, real `.env` files must remain ignored, and no actual credentials belong in Git. Avoid modifying runtime configuration as part of this review. | DevOps + Architect / Backend — **configuration alignment pending** |
-| **DD-4** | NFR-OPS-04 already states logical backup with `pg_dump`, storage outside the DB container/volume and verification of restore into a clean DB. No backup/restore execution evidence is present in this review. | Link the requirement to the deployment design; record backup and restore procedure/verification as future implementation or final-demo readiness, not Sprint 2 completed operations. | DevOps + QA — **design described; execution pending** |
+| **DD-4** | NFR-OPS-04 requires a logical backup with `pg_dump`, archive storage outside the DB container/volume and restore verification against an empty database. No restore execution evidence is available. | [Backup/restore verification design](backup_restore_design.md) specifies the proposed archive, isolated restore, record comparison and evidence fields; final verification still requires execution and QA review. | DevOps + QA — **design specified for review; restore untested** |
 
 ## Consistency checks
 
