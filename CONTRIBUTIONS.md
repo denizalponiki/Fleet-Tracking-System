@@ -1,7 +1,7 @@
 # FleetSync · Individual Contributions
 
-> SENG 321 · Team 3 · Sprint 1 (tag [`sprint-1`](https://github.com/denizalponiki/Fleet-Tracking-System/releases/tag/sprint-1))
-> Maintained by the Scrum Master. Last updated: 2026-11-05.
+> SENG 321 · Team 3 · Sprints 1 and 2 (tags [`sprint-1`](https://github.com/denizalponiki/Fleet-Tracking-System/releases/tag/sprint-1) and `sprint-2`)
+> Maintained by the Scrum Master. Last updated: 2026-11-23.
 > Numbers in the form `#N` link to the issue or pull request with that number in this repository.
 
 | # | Member | Student no. | GitHub | Role |
@@ -16,19 +16,19 @@
 
 Full responsibilities per role: [`docs/raci_matrix.md`](docs/raci_matrix.md).
 
-## Summary (as of 2026-11-05)
+## Summary (as of 2026-11-23)
 
-| Member | Commits | PRs opened | Reviews | Issues opened |
-|---|---|---|---|---|
-| Ahmet Can Vurmaz | 3 | 3 | 18 | 17 |
-| Mehmet Umut Oğuzcan | 23 | 21 | 4 | 11 |
-| Ali Eren Kurt | 11 | 12 | 28 | 13 |
-| Abdullah Tecimen | 10 | 7 | 11 | 15 |
-| Deniz Alp Oniki | 20 | 16 | 7 | 11 |
-| Ahmet Tarık Orhan | 2 | 2 | 3 | 11 |
-| Mustafa Düşünceli | 1 | 1 | 2 | 9 |
+| Member | Commits | PRs opened | Reviews | Issues opened | Reviews in Sprint 2 |
+|---|---|---|---|---|---|
+| Ahmet Can Vurmaz | 12 | 11 | 25 | 20 | 6 |
+| Mehmet Umut Oğuzcan | 34 | 26 | 14 | 25 | 8 |
+| Ali Eren Kurt | 27 | 27 | 47 | 74 | 17 |
+| Abdullah Tecimen | 17 | 12 | 17 | 46 | 6 |
+| Deniz Alp Oniki | 29 | 21 | 19 | 16 | 12 |
+| Ahmet Tarık Orhan | 3 | 3 | 9 | 12 | 6 |
+| Mustafa Düşünceli | 5 | 2 | 3 | 10 | 1 |
 
-Commits = non-merge commits on `develop`. Reviews = reviews on other members' pull requests. Live view: [contributors graph](https://github.com/denizalponiki/Fleet-Tracking-System/graphs/contributors).
+Commits = non-merge commits on `develop`. Reviews = reviews on other members' pull requests. Sprint 2 = pull requests created from 2026-11-20. Live view: [contributors graph](https://github.com/denizalponiki/Fleet-Tracking-System/graphs/contributors).
 
 ---
 
@@ -42,7 +42,12 @@ Commits = non-merge commits on `develop`. Reviews = reviews on other members' pu
   - Opened the 10 epic issues (#69–#78) and the identity stories US-01–US-06 (#86–#91)
   - Aligned US-20 with the API contract (409 for the maintenance block): #65 → #66
   - Reviewed and merged teammates' PRs, e.g. #54, #119, #120, #132, #141, #146
-- **Pull requests opened:** #16, #17, #66
+- **Sprint 2 work:**
+  - Detailed SRS: [`docs/srs/srs.md`](docs/srs/srs.md) (#252, #266, #294)
+  - Requirements traceability matrix story → endpoint → test → issue: [`docs/srs/traceability_matrix.md`](docs/srs/traceability_matrix.md) (#254, #303)
+  - Refined backlog with the Feature level, F1–F5 decisions, licence renewal rule and Sprint 3 scope (31 Must stories, 116 SP): [`docs/product_backlog.md`](docs/product_backlog.md) (#250, #264, #279, #303)
+  - PO approval of the QA numeric targets in [`docs/nfr_quality_measures.md`](docs/nfr_quality_measures.md) (#303)
+- **Pull requests opened in Sprint 1:** #16, #17, #66
 - **Commits:** [list](https://github.com/denizalponiki/Fleet-Tracking-System/commits/develop?author=Chadde7)
 - **Issues:** [opened](https://github.com/denizalponiki/Fleet-Tracking-System/issues?q=is%3Aissue+author%3AChadde7) · [assigned](https://github.com/denizalponiki/Fleet-Tracking-System/issues?q=is%3Aissue+assignee%3AChadde7)
 
@@ -59,7 +64,13 @@ Commits = non-merge commits on `develop`. Reviews = reviews on other members' pu
   - GitHub Projects board: [FleetSync board](https://github.com/users/umt06-1/projects/2)
   - Handover user stories US-26–US-28 under epic #74: #128, #129, #130
   - Reviewed and merged #40 and #127; prepared this contributions file
-- **Pull requests opened:** #26–#35, #44, #45, #47, #48, #132, #139, #141, #143, #146, #147, #149
+- **Sprint 2 work:**
+  - Sprint 2 plan, `Sprint 2` milestone, IMP-06: [`docs/sprint-reports/sprint-2.md`](docs/sprint-reports/sprint-2.md) (#251 → #257)
+  - Sprint 1 retrospective (#258 → #261) and stand-up records (#295 → #298)
+  - Domain event contract between `handover` and `maintenance`, agreed with the Architect; C4 and UML links updated: [`docs/domain_events.md`](docs/domain_events.md) (#269 → #270)
+  - Review of the Figma handover screens S6–S8 on #292 (four findings, all applied by the author); approvals on #289 (OpenAPI v1.0, handover paths), #291, #294
+  - Handover task issues T-26.1 to T-28.2 (#202–#209)
+- **Pull requests opened in Sprint 1:** #26–#35, #44, #45, #47, #48, #132, #139, #141, #143, #146, #147, #149
 - **Commits:** [list](https://github.com/denizalponiki/Fleet-Tracking-System/commits/develop?author=umt06-1)
 - **Issues:** [opened](https://github.com/denizalponiki/Fleet-Tracking-System/issues?q=is%3Aissue+author%3Aumt06-1) · [assigned](https://github.com/denizalponiki/Fleet-Tracking-System/issues?q=is%3Aissue+assignee%3Aumt06-1)
 
@@ -73,7 +84,16 @@ Commits = non-merge commits on `develop`. Reviews = reviews on other members' pu
   - ADR-001, Python / FastAPI backend: [`docs/adr/ADR-001-python-fastapi.md`](docs/adr/ADR-001-python-fastapi.md) (issue #135, PR #136)
   - Maintenance and vehicle stories US-07–US-17: #92–#102
   - Most reviews in the team (28); merged the largest number of Sprint 1 PRs, including the `develop` → `main` release merge #144
-- **Pull requests opened:** #18–#22, #24, #42, #119, #120, #136, #137
+- **Sprint 2 work:**
+  - C4 level 2 and 3: [`docs/c4/README.md`](docs/c4/README.md) (#236 → #239)
+  - UML class, sequence, state, deployment and use case diagrams: [`docs/uml/`](docs/uml) (#237 → #240, #286 → #287)
+  - ER diagram and database schema: [`docs/uml/er_diagram.md`](docs/uml/er_diagram.md) (#238 → #241)
+  - ADR-002 to ADR-006: [`docs/adr/`](docs/adr) (#242 → #244, #243 → #245)
+  - API contract frozen as v1.0.0 (#288 → #289); contract decisions (#273 → #274, #277 → #278)
+  - NFR architecture decisions DD-2, DD-3, PERF-02 (#290 → #291)
+  - Backend skeleton with module boundaries for Sprint 3 (#248 → #249)
+  - Most reviews in Sprint 2 (17)
+- **Pull requests opened in Sprint 1:** #18–#22, #24, #42, #119, #120, #136, #137
 - **Commits:** [list](https://github.com/denizalponiki/Fleet-Tracking-System/commits/develop?author=AliErenJ)
 - **Issues:** [opened](https://github.com/denizalponiki/Fleet-Tracking-System/issues?q=is%3Aissue+author%3AAliErenJ) · [assigned](https://github.com/denizalponiki/Fleet-Tracking-System/issues?q=is%3Aissue+assignee%3AAliErenJ)
 
@@ -87,7 +107,12 @@ Commits = non-merge commits on `develop`. Reviews = reviews on other members' pu
   - QA findings raised as issues and tracked to closure: #41, #43, #63, #67, #126
   - Fuel and quality stories US-29–US-32, US-49–US-51: #79–#85
   - Reviewed and merged teammates' PRs, e.g. #10, #14, #16, #17, #45, #48, #108
-- **Pull requests opened:** #9, #40, #51, #64, #127
+- **Sprint 2 work:**
+  - Measurable QA quality NFRs: [`docs/nfr_quality_measures.md`](docs/nfr_quality_measures.md) (#253 → #256)
+  - Test cases for the remaining Must stories and F3–F5 (#271 → #272, #275 → #276)
+  - NFR test case IDs in the test plan v0.6 and QA rows of NFR §5 closed, including the WCAG contrast check of the prototype (#299 → #300, #301)
+  - Reviewed and merged #257, #264, #292
+- **Pull requests opened in Sprint 1:** #9, #40, #51, #64, #127
 - **Commits:** [list](https://github.com/denizalponiki/Fleet-Tracking-System/commits/develop?author=TheTeci)
 - **Issues:** [opened](https://github.com/denizalponiki/Fleet-Tracking-System/issues?q=is%3Aissue+author%3ATheTeci) · [assigned](https://github.com/denizalponiki/Fleet-Tracking-System/issues?q=is%3Aissue+assignee%3ATheTeci)
 
@@ -103,7 +128,14 @@ Commits = non-merge commits on `develop`. Reviews = reviews on other members' pu
   - Docker Compose skeleton: [`docker-compose.yml`](docker-compose.yml) (issue #133, PR #134)
   - `sprint-1` release tag
   - Reporting and platform stories US-33–US-37, US-46–US-48, US-52: #103–#106, #121–#125
-- **Pull requests opened:** #1–#7, #10, #12, #14, #37, #68, #110, #134
+- **Sprint 2 work:**
+  - Operational NFRs and verification plan (#246 → #247)
+  - Reporting contract and calculations aligned for Sprint 2 (#280 → #281)
+  - Deployment architecture review: [`docs/deployment_architecture_review.md`](docs/deployment_architecture_review.md) (#282 → #283)
+  - Synthetic jury demo seed data design: [`docs/sprint2_seed_data_design.md`](docs/sprint2_seed_data_design.md) (#284 → #285)
+  - DD-4 backup and restore verification plan: [`docs/backup_restore_design.md`](docs/backup_restore_design.md) (#304 → #305)
+  - Review with requested changes on #291 (two inconsistencies fixed by the author); approvals on #289, #303
+- **Pull requests opened in Sprint 1:** #1–#7, #10, #12, #14, #37, #68, #110, #134
 - **Commits:** [list](https://github.com/denizalponiki/Fleet-Tracking-System/commits/develop?author=denizalponiki)
 - **Issues:** [opened](https://github.com/denizalponiki/Fleet-Tracking-System/issues?q=is%3Aissue+author%3Adenizalponiki) · [assigned](https://github.com/denizalponiki/Fleet-Tracking-System/issues?q=is%3Aissue+assignee%3Adenizalponiki)
 
@@ -117,7 +149,11 @@ Commits = non-merge commits on `develop`. Reviews = reviews on other members' pu
   - Contract consistency finding #52
   - Reservation and ride-sharing stories US-18–US-25: #55–#62
   - Reviewed and merged #136, #137
-- **Pull requests opened:** #54, #108
+- **Sprint 2 work:**
+  - Sprint 2 review of the reservation and carpool API notes; performance targets confirmed in the NFR (reads 500 ms, `POST /reservations` 800 ms, `GET /vehicles/recommendations` 1 s): [`docs/carpool_reservation_api.md`](docs/carpool_reservation_api.md) (#296 → #297)
+  - Code-owner reviews of #289 and #291; approvals on #245, #249, #274, #278
+  - Reservation, carpool and performance input on #160, #161, #162, #237, #246
+- **Pull requests opened in Sprint 1:** #54, #108
 - **Commits:** [list](https://github.com/denizalponiki/Fleet-Tracking-System/commits/develop?author=ahmettarikorhan)
 - **Issues:** [opened](https://github.com/denizalponiki/Fleet-Tracking-System/issues?q=is%3Aissue+author%3Aahmettarikorhan) · [assigned](https://github.com/denizalponiki/Fleet-Tracking-System/issues?q=is%3Aissue+assignee%3Aahmettarikorhan)
 
@@ -129,6 +165,10 @@ Commits = non-merge commits on `develop`. Reviews = reviews on other members' pu
   - UI/UX flow and screen list: [`docs/ui_ux_flow_and_dashboard.md`](docs/ui_ux_flow_and_dashboard.md) (issue #39, PR #109)
   - User interface stories US-38–US-45: #111–#118
   - Reviewed and merged #37
-- **Pull requests opened:** #109
+- **Sprint 2 work:**
+  - Figma prototype with 15 screens for three roles, clickable prototype and shared components; contrast checked against NFR-ACC-01 ([Figma](https://www.figma.com/design/gBbTn4ZmQc5GBa8yC9WRe8))
+  - [`docs/ui_ux_flow_and_dashboard.md`](docs/ui_ux_flow_and_dashboard.md) v0.2: screen–story mapping, four user-flow diagrams, screenshots (#255 → #292); review findings on S6–S8 applied and S8b added
+  - Frontend consumer review and approval of OpenAPI v1.0 (#289)
+- **Pull requests opened in Sprint 1:** #109
 - **Commits:** [list](https://github.com/denizalponiki/Fleet-Tracking-System/commits/develop?author=mustafadusunceli)
 - **Issues:** [opened](https://github.com/denizalponiki/Fleet-Tracking-System/issues?q=is%3Aissue+author%3Amustafadusunceli) · [assigned](https://github.com/denizalponiki/Fleet-Tracking-System/issues?q=is%3Aissue+assignee%3Amustafadusunceli)
