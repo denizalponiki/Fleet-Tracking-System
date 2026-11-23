@@ -321,11 +321,11 @@ These requirements turn `system_vision.md` §10 (Security, KVKK) and ADR-005 int
 | Confirm API/JWT environment-variable names (DD-3) | Ali Eren Kurt + Deniz Alp Oniki | Confirmed by the Architect — names in NFR-OPS-02; `.env.example` updated with DD-1 |
 | Review backup/restore method (DD-4) | Deniz Alp Oniki + Abdullah Tecimen | Open |
 | Add measurable QA metrics (section 4) | Abdullah Tecimen | Done — section 4 merged (#253); numeric targets approved by the Architect (row below) |
-| Approve QA numeric targets (PERF-01 load profile, 70% module coverage, WCAG 2.1 AA) | Ali Eren Kurt + Ahmet Can Vurmaz | Approved by the Architect — 20 virtual users fit assumption A6; 70% for the business-rule modules is a team target reported per module, the CI gate stays at 50%; WCAG 2.1 AA for the demo screens. PO approval pending. |
+| Approve QA numeric targets (PERF-01 load profile, 70% module coverage, WCAG 2.1 AA) | Ali Eren Kurt + Ahmet Can Vurmaz | Approved by Architect and PO — 20 virtual users fit assumption A6; 70% for the business-rule modules is a team target reported per module, the CI gate stays at 50%; WCAG 2.1 AA for the demo screens. |
 | Confirm performance targets are realistic for the reservation and recommendation queries | Ahmet Tarık Orhan | Confirmed — targets kept: reads ≤ 500 ms, `POST /reservations` ≤ 800 ms, `GET /vehicles/recommendations` ≤ 1 s |
 | Decide pagination for fuel receipts, anomalies and expenses (PERF-02) | Ali Eren Kurt | Decided — no pagination in release 1; the server bounds them to a default of 92 days and a maximum of 366 days (NFR-PERF-02, `openapi.yaml`) |
 | Check Figma palette contrast and status text (ACC-01, ACC-02) | Mustafa Düşünceli + Abdullah Tecimen | Done — `ui_ux_flow_and_dashboard.md` §8. QA recalculated every ratio with the WCAG 2.1 formula (2026-11-22); the three corrected colours pass (≥ 4.73:1 on the page background) and every status is also shown as text. Keyboard walkthrough and `axe-core` scan remain for Final (TC-NFR-ACC-01). |
 | Add the *(new)* test case IDs from section 4 to the test plan | Abdullah Tecimen | Done — `test_plans_and_coverage.md` v0.6: §6.15 (TC-NFR-…), TC-MNT-11, TC-RES-11, TC-POOL-07 (#300) |
-| Reconcile with SRS and traceability | Ahmet Can Vurmaz | Open |
+| Reconcile with SRS and traceability | Ahmet Can Vurmaz | Done — verified against `docs/srs/srs.md` and `docs/srs/traceability_matrix.md`. |
 
 **Sprint 2 exit condition:** Requirement IDs, measurable acceptance criteria and verification methods are documented and reviewed. Do not mark future operational implementation as complete until its tests have actually run.
