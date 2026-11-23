@@ -10,22 +10,22 @@
 |---|---|---|---|---|---|---|
 | **US-01** | Must | Sprint 3 | REQ-ID-01 | `POST /auth/login`, `GET /me` | TC-AUTH-01, TC-AUTH-02, TC-AUTH-03 | #153 (F1.1) |
 | **US-02** | Must | Sprint 3 | REQ-ID-02 | `GET /users`, `POST /users` | TC-AUTH-04 | #153 (F1.1) |
-| **US-03** | Must | Sprint 3 | REQ-ID-03 | `POST /drivers/{id}/licenses`, `GET /drivers/{id}/licenses`, `GET /drivers/{id}` | *Sprint 2 QA (pending)* | #154 (F1.2) |
+| **US-03** | Must | Sprint 3 | REQ-ID-03 | `POST /drivers/{id}/licenses`, `GET /drivers/{id}/licenses`, `GET /drivers/{id}` | TC-LIC-01 – TC-LIC-12 | #154 (F1.2) |
 | **US-04** | Must | Sprint 3 | REQ-ID-04 | `POST /drivers/{id}/licenses/{licenseId}/verify` | TC-ELG-05 | #154 (F1.2) |
 | **US-05** | Must | Sprint 3 | REQ-ID-05 | `GET /drivers/{id}/eligibility` | TC-ELG-01 – TC-ELG-04 | #155 (F1.3) |
 | **US-06** | Could | Final | REQ-ID-06 | `PUT /drivers/{id}` | *Final* | #153 (F1.1) |
-| **US-07** | Must | Sprint 3 | REQ-VEH-01 | `POST /vehicles` | *Sprint 2 QA (pending)* | #156 (F2.1) |
-| **US-08** | Must | Sprint 3 | REQ-VEH-02 | `GET /vehicles`, `GET /vehicles/{id}` | *Sprint 2 QA (pending)* | #156 (F2.1) |
+| **US-07** | Must | Sprint 3 | REQ-VEH-01 | `POST /vehicles` | TC-VEH-01 – TC-VEH-08 | #156 (F2.1) |
+| **US-08** | Must | Sprint 3 | REQ-VEH-02 | `GET /vehicles`, `GET /vehicles/{id}` | TC-VEH-09 – TC-VEH-15 | #156 (F2.1) |
 | **US-09** | Should | Final | REQ-VEH-03 | `PATCH /vehicles/{id}`, `POST /vehicles/{id}/status` | TC-MNT-10 | #156 (F2.1) |
 | **US-10** | Should | Final | REQ-MNT-01 | `GET /maintenance/rules`, `PUT /maintenance/rules/{ruleId}` | *Final* | #157 (F3.1) |
 | **US-11** | Must | Sprint 3 | REQ-MNT-01 | `GET /vehicles/{id}/maintenance-status` | TC-MNT-01 – TC-MNT-04 | #157 (F3.1) |
 | **US-12** | Must | Sprint 3 | REQ-MNT-02 | `GET /vehicles/recommendations` | TC-REC-01 – TC-REC-03, TC-E2E-01 | #157 (F3.1) |
 | **US-13** | Must | Sprint 3 | REQ-MNT-03 | `POST /reservations/{id}/return` | TC-MNT-05 – TC-MNT-07, TC-E2E-03 | #158 (F3.2) |
-| **US-14** | Must | Sprint 3 | REQ-MNT-03 | `GET /maintenance/alerts` | *Sprint 2 QA (pending)* | #158 (F3.2) |
+| **US-14** | Must | Sprint 3 | REQ-MNT-03 | `GET /maintenance/alerts` | TC-ALR-01 – TC-ALR-06, TC-E2E-04 | #158 (F3.2) |
 | **US-15** | Must | Sprint 3 | REQ-MNT-03 | `POST /maintenance/records` | TC-MNT-08, TC-MNT-09, TC-E2E-04 | #158 (F3.2) |
 | **US-16** | Should | Final | REQ-MNT-03 | `GET /maintenance/calendar` | *Final* | #159 (F3.3) |
 | **US-17** | Could | Final | REQ-MNT-03 | `GET /vehicles/{id}/maintenance-records` | *Final* | #159 (F3.3) |
-| **US-18** | Must | Sprint 3 | REQ-RES-01 | `GET /locations` | *Sprint 2 QA (pending)* | #160 (F4.1) |
+| **US-18** | Must | Sprint 3 | REQ-RES-01 | `GET /locations` | TC-LOC-01 – TC-LOC-03, TC-E2E-01 | #160 (F4.1) |
 | **US-19** | Must | Sprint 3 | REQ-RES-01 | `GET /vehicles/recommendations` | TC-REC-04 – TC-REC-06, TC-E2E-01 | #160 (F4.1) |
 | **US-20** | Must | Sprint 3 | REQ-RES-02 | `POST /reservations` | TC-RES-01 – TC-RES-05, TC-RES-08 – TC-RES-10, TC-E2E-01 | #161 (F4.2) |
 | **US-21** | Must | Sprint 3 | REQ-RES-02 | `GET /reservations`, `GET /reservations/{id}` | TC-RES-07 | #161 (F4.2) |
