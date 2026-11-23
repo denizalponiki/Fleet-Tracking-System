@@ -7,7 +7,7 @@
 | Architecture owner / reviewer | Ali Eren Kurt — Lead Architect |
 | Date | 2026-11-21 |
 | Tracking | [Issue #282](https://github.com/denizalponiki/Fleet-Tracking-System/issues/282); [Architecture issue #237](https://github.com/denizalponiki/Fleet-Tracking-System/issues/237) |
-| Status | **Proposed findings — pending architecture/team sign-off** |
+| Status | **Review updated 2026-11-23 — DD-2/DD-3 decisions confirmed; DD-1 implementation and DD-4 verification remain pending** |
 
 ## Review scope and sources
 
@@ -26,8 +26,8 @@ This is a **design and documentation review**, not a claim that deployment, TLS,
 | ID | Finding / current state | Sprint 2 action | Owner and status |
 |---|---|---|---|
 | **DD-1** | Diagram proposes `web` (Nginx), `api` (FastAPI) and `db` (PostgreSQL) on one Docker Compose host. Current `docker-compose.yml` contains **only** `db`. The named network, readiness checks and web/API services depicted are target-state design, not active infrastructure. | Confirm the topology as the target architecture and preserve the Sprint 3 implementation boundary (US-46). Do not add app containers in Sprint 2. | DevOps + Architect — architecture confirmation pending; implementation Sprint 3 |
-| **DD-2** | Diagram depicts local HTTP at `http://localhost:8080` and HTTPS `:443` when configured; team transport decision remains open. | Proposed rule for review: localhost-only demo with synthetic data may use HTTP; anything externally exposed should use HTTPS with a valid certificate. **Do not mark this accepted until the team/architect decides.** | Team / Architect / DevOps — **decision pending** |
-| **DD-3** | The backend settings use a required `JWT_SECRET` value (Pydantic `jwt_secret`, no default), but the current `.env.example` contains only PostgreSQL variables. The diagram already names `JWT_SECRET`. | Confirm the exact `JWT_SECRET` and `DATABASE_URL` setting names with backend owner. Document that `.env.example` needs non-secret placeholders, real `.env` files must remain ignored, and no actual credentials belong in Git. Avoid modifying runtime configuration as part of this review. | DevOps + Architect / Backend — **configuration alignment pending** |
+| **DD-2** | The deployment diagram distinguishes localhost HTTP from HTTPS for public exposure. | Decision recorded in NFR-OPS-08: localhost-only demo with synthetic data uses HTTP at `http://localhost:8080`; any publicly exposed deployment requires HTTPS with a valid certificate, keeping the API behind the reverse proxy and DB port unexposed. This is an approved design decision, **not evidence of an implemented web service or HTTPS deployment**. | Architect + DevOps — **architecture decision approved; implementation Sprint 3** |
+| **DD-3** | `backend/app/shared/config.py` uses `DATABASE_URL` (configurable) and requires `JWT_SECRET`; the current `.env.example` still lists only PostgreSQL variables. | NFR-OPS-02 records the Architect's confirmed names: `DATABASE_URL`, `JWT_SECRET`, `JWT_EXPIRES_SECONDS` (default 3600), plus default `JWT_ALGORITHM` (HS256) and `JWT_ISSUER` (fleetsync). The non-secret placeholders and Compose API wiring are **planned with DD-1 in Sprint 3**, not present in the current repo. No secrets are committed. | Architect + DevOps — **names confirmed; `.env.example` / Compose changes pending Sprint 3** |
 | **DD-4** | NFR-OPS-04 requires a logical backup with `pg_dump`, archive storage outside the DB container/volume and restore verification against an empty database. No restore execution evidence is available. | [Backup/restore verification design](backup_restore_design.md) specifies the proposed archive, isolated restore, record comparison and evidence fields; final verification still requires execution and QA review. | DevOps + QA — **design specified for review; restore untested** |
 
 ## Consistency checks
@@ -40,8 +40,8 @@ This is a **design and documentation review**, not a claim that deployment, TLS,
 ## Review questions for Ali Eren and the team
 
 - **DD-1:** Is the one-host Nginx/FastAPI/PostgreSQL diagram the approved target for US-46 in Sprint 3?
-- **DD-2:** Has the team decided localhost HTTP versus HTTPS for the actual demo environment? Record the decision with owner and rationale.
-- **DD-3:** Can the backend owner confirm `JWT_SECRET` and `DATABASE_URL` naming, and add safe placeholders during the appropriate configuration work?
+- **DD-2:** Decision already recorded in NFR-OPS-08: localhost HTTP for the synthetic local demo; HTTPS with a valid certificate if publicly exposed. Verify the implemented environment against this decision during Sprint 3.
+- **DD-3:** Environment-variable names are confirmed in NFR-OPS-02; verify that Sprint 3's DD-1 Compose/API changes introduce safe `.env.example` placeholders and do not commit real secrets.
 - **DD-4:** Does NFR-OPS-04 adequately specify backup and restore acceptance evidence for the planned demo?
 
 ## Sprint 2 completion criterion
