@@ -89,7 +89,7 @@ The `rideSharingSavedKgCo2` field estimates emissions avoided by separate passen
 
 Utilisation (%) = reserved hours / available working hours × 100.
 
-Example: 20 reserved hours / 40 working hours × 100 = 50%.
+Example: 22.5 reserved hours / 45 working hours (5 weekdays × 9 hours/day) × 100 = 50%.
 
 **Sprint 2 working calendar (SRS §3.8):** Monday–Friday, 08:00–17:00 (9 hours per day) in the Europe/Istanbul time zone, excluding `IN_MAINTENANCE` and `OUT_OF_SERVICE` periods from available hours. Invalid periods return `400 VALIDATION_ERROR`; verify the zero-available-hours behavior against the contract before implementation.
 
