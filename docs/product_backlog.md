@@ -674,7 +674,7 @@ Trace: G5, G6, Demo step 7
 
 Acceptance criteria:
 
-1. **Given** a vehicle reserved 20 of 40 working hours, **when** the utilisation report is requested, **then** 50% utilisation is returned.
+1. **Given** a vehicle reserved 22.5 of 45 working hours (5 weekdays × 9 working hours/day), **when** the utilisation report is requested, **then** 50% utilisation is returned.
 2. **Given** an invalid period, **when** the report is requested, **then** the request is rejected with 400 `VALIDATION_ERROR`.
 
 SP: 3 · Priority: Must · Depends on: US-20 · Owner: Deniz Alp Oniki · Target: Final  
