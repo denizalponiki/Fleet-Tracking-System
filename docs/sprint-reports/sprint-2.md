@@ -104,6 +104,19 @@ Present: all seven members · Absent: none
 | Ahmet Tarık Orhan | Closed the Sprint 2 reviews: approved #245, #249, #274, #278; reservation, carpool and performance input on #160, #161, #162, #237, #246 | Review #289 and #291; open one issue and one PR to bring `carpool_reservation_api.md` to Sprint 2 and mark his performance row in the NFR as Confirmed | None |
 | Mustafa Düşünceli | Issue #255; Figma file and shared components; Staff (8), Maintenance Officer (3) and Fleet Manager (3) screens; US-44 fuel receipt screen (15 screens in total); clickable prototype; contrast fixed against NFR-ACC-01; `ui_ux_flow_and_dashboard.md` v0.2 (Figma link, screen–story mapping, four user flows, screenshots) in PR #292; frontend review and approval of #289 | Apply the review comments on #292; merge after approval | #292 waited for the code-owner review of Ali Eren (later merged with the review fixes) |
 
+### Stand-up · 2026-11-23 (async, WhatsApp)
+Present: all seven members · Absent: none
+
+| Member | Done (2026-11-22 and today) | Next | Blocker |
+|---|---|---|---|
+| Ahmet Can Vurmaz | Main content of the backlog, SRS and traceability matrix; licence renewal rule (#262), use case links and F3–F5 rules in SRS and backlog; filled the five pending test IDs (US-03, US-07, US-08, US-14, US-18) from #272; US-36 AC1 aligned with the 9-hour working day; PO approval and SRS alignment rows in the NFR (#303); Sprint 3 scope confirmed (31 Must stories, 116 SP) | Follow #303 to merge; final checks before the `main` merge | None; waiting for the review of #303 |
+| Mehmet Umut Oğuzcan | 22 November stand-up record (#298); review and merge of #294; approvals on #289 and #291; follow-up of the code-owner reviews | Final Sprint 2 report, IMP-06 and `CONTRIBUTIONS.md` update; submission ZIP | None |
+| Ali Eren Kurt | Resolved the merge conflict on #291; #291 and #289 merged, #290 and #288 closed; reviewed #297 | Review and approve #305 (DD-4 backup and restore) and #303; support the `develop` → `main` merge and the `sprint-2` and `openapi-v1.0` tags | None |
+| Abdullah Tecimen | Eight NFR test IDs added to the test plan v0.6 (non-functional scenarios, concurrent reservation and last-seat tests, maintenance alert rollback) in #300; recalculated every WCAG ratio of the Figma contrast check; QA rows of NFR §5 closed in #301 | Close #299; run the pre-submission QA checklist (test plan §12) after the `main` merge and the `sprint-2` tag | None; two dependencies: SRS update for F3–F5 "Fixed" (Ahmet Can), DD-4 decision (Deniz) |
+| Deniz Alp Oniki | Checked the open Sprint 2 PRs; followed the NFR and API fixes; reviewed the release documentation; reviewed #303 (test IDs, US-36 arithmetic, CI), no issues found; compared `develop` and `main` | `develop` → `main` merge, `sprint-2` release and tag after the approvals | #303 waited for the code-owner approval of Ali Eren |
+| Ahmet Tarık Orhan | Reviewed and approved #289 and #291; `carpool_reservation_api.md` Sprint 2 version merged (#297), #296 closed; NFR row kept (reads 500 ms, `POST /reservations` 800 ms, `GET /vehicles/recommendations` 1 s) | No Sprint 2 work left; Sprint 3 issues (#55–#62, #72, #73, #160–#162) stay assigned to him | None |
+| Mustafa Düşünceli | Applied the review on #292 (structured damage report, separate 422 messages, vehicle status on its own line) and added S8b for severe damage; #292 merged, #255 closed; approved #289; frontend check comment on #301 | Wait for the `develop` → `main` merge and the `sprint-2` tag; check that his commits appear on `main` | None |
+
 <!-- Copy this block for every stand-up. Write only what was actually said. -->
 
 ### Stand-up · YYYY-MM-DD
@@ -141,21 +154,39 @@ Collected asynchronously on WhatsApp, 2026-11-21.
 
 ## 11. Sprint backlog status
 
-| Deliverable | Owner | Issue | PR | Status |
+All Sprint 2 issues in the `Sprint 2` milestone are closed (2026-11-23).
+
+| Deliverable | Owner | Issues | PRs | Status |
 |---|---|---|---|---|
-| SRS and refined backlog | Ahmet Can Vurmaz | | | Not started |
-| NFR and quality measures | Abdullah Tecimen | | | Not started |
-| Figma prototypes and user flows | Mustafa Düşünceli | | | Not started |
-| C4 and UML architecture document | Ali Eren Kurt | | | Not started |
-| OpenAPI v1.0 freeze | Ali Eren Kurt | | | Not started |
-| `TripCompletedEvent` contract | Mehmet Umut Oğuzcan, Ali Eren Kurt | | | Not started |
-| Sprint 1 retrospective, stand-ups, this report | Mehmet Umut Oğuzcan | #251 | #257 | In progress |
-| `develop` → `main` and `sprint-2` tag | Deniz Alp Oniki | | | Not started |
+| SRS and refined backlog | Ahmet Can Vurmaz | #262, #302 | #250, #252, #254, #264, #266, #279, #294, #303 | Done |
+| NFR and quality measures | Abdullah Tecimen | #246, #253, #290, #299, #304 | #247, #256, #291, #300, #301, #305 | Done |
+| Test cases for Must stories and F3–F5 | Abdullah Tecimen | #271, #275 | #272, #276 | Done |
+| Figma prototypes and user flows | Mustafa Düşünceli | #255 | #292 | Done |
+| C4 and UML architecture document, ER, ADR-002 to ADR-006 | Ali Eren Kurt | #236, #237, #238, #242, #243, #286 | #239, #240, #241, #244, #245, #287 | Done |
+| OpenAPI v1.0 freeze | Ali Eren Kurt | #288 | #289 | Done (`openapi-v1.0` tag pending) |
+| Contract decisions (F3–F5, licence access, reporting) | Ali Eren Kurt, Deniz Alp Oniki | #273, #277, #280 | #274, #278, #281 | Done |
+| Deployment review and demo seed data design | Deniz Alp Oniki | #282, #284 | #283, #285 | Done |
+| Reservation and carpool API review | Ahmet Tarık Orhan | #296 | #297 | Done |
+| `TripCompletedEvent` contract | Mehmet Umut Oğuzcan, Ali Eren Kurt | #267, #269 | #268, #270 | Done |
+| Sprint 1 retrospective, stand-ups, this report | Mehmet Umut Oğuzcan | #251, #258, #295 | #257, #261, #298 | Done |
+| Backend skeleton for Sprint 3 (stretch) | Ali Eren Kurt | #248 | #249 | Done |
+| `develop` → `main` and `sprint-2` tag | Deniz Alp Oniki | | | Planned for 2026-11-24 |
+
+### Review evidence
+
+Reviews changed the documents before merge:
+
+| PR | Reviewer | Finding | Result |
+|---|---|---|---|
+| #292 Figma | Mehmet Umut Oğuzcan | Four findings on S6–S8 (damage area and severity, `ODOMETER_DECREASED`, vehicle status label, separate 422 messages) | All applied; S8b added for severe damage |
+| #291 NFR decisions | Deniz Alp Oniki | Changes requested for two technical inconsistencies | Fixed; unpaginated lists bounded on the server |
+| #270 Event contract | Ali Eren Kurt | Remove two unused events, one status writer, single document | Applied in v0.2 of `domain_events.md` |
+| #289 OpenAPI v1.0 | Mustafa Düşünceli | Frontend consumer review: every screen's operations present | Approved; response examples noted for a later patch |
 
 ## 12. Submission checklist
 
-- [ ] All five items in §4 merged into `main`
+- [ ] All five items in §4 merged into `main` (all merged into `develop` on 2026-11-23)
 - [ ] `sprint-2` tag on `main`
-- [ ] `CONTRIBUTIONS.md` updated with Sprint 2 work
-- [ ] Figma link opens without signing in
+- [x] `CONTRIBUTIONS.md` updated with Sprint 2 work
+- [x] Figma link opens without signing in (public view link in `ui_ux_flow_and_dashboard.md`)
 - [ ] ZIP with all Sprint 2 documents uploaded on Teams with the repository link
