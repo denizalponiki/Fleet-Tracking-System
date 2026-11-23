@@ -10,7 +10,7 @@
 | IMP-03 | 2026-11-02 | 3 members have no commit / PR / review yet. | Individual contribution (15 pts) at risk. | Mehmet Umut Oğuzcan | Each member opens at least one issue + PR and reviews one PR before the Sprint 1 submission. | Closed | 2026-11-04 |
 | IMP-04 | 2026-11-02 | Files are added with "Add files via upload" and default `<user>-patch-N` branches; several PRs were merged within minutes without review. | Changes are hard to review; history does not show what changed. | Mehmet Umut Oğuzcan, Deniz Alp Oniki | Share `docs/git_flow.md`; enable branch protection (1 approval, no self-approval). | Closed | 2026-11-05 |
 | IMP-05 | 2026-11-02 | No `sprint-1` tag yet; `main` contains only the initial commit. | Sprint 1 submission evidence incomplete. | Deniz Alp Oniki | Merge `develop` → `main` through a reviewed PR and tag `sprint-1` before submission. | Closed | 2026-11-05 |
-| IMP-06 | 2026-11-21 | No repository activity between 2026-11-06 and 2026-11-21; Sprint 2 not started. | Sprint 2 (20%) runs in four days; individual contribution evidence gaps. | Mehmet Umut Oğuzcan | Compressed plan in `sprint-2.md`: drafts as PRs by 2026-11-22, reviews and merges on 2026-11-23, submission on 2026-11-24. | Open | |
+| IMP-06 | 2026-11-21 | No repository activity between 2026-11-06 and 2026-11-21; Sprint 2 not started. | Sprint 2 (20%) runs in four days; individual contribution evidence gaps. | Mehmet Umut Oğuzcan | Compressed plan in `sprint-2.md`: drafts as PRs by 2026-11-22, reviews and merges on 2026-11-23, submission on 2026-11-24. | Closed | 2026-11-23 |
 
 <!-- Add a row:
 | IMP-07 | YYYY-MM-DD | what blocks us | what it affects | who solves it | next step | Open / In progress / Closed | YYYY-MM-DD |
