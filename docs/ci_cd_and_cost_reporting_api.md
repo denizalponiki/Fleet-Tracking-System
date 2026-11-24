@@ -53,6 +53,8 @@ SonarQube integration can be prepared during Sprint 3; its backlog target is Fin
 
 ## 4. Reporting API
 
+**Sprint 2 scope:** the following documents specify future reporting behavior only; reporting backend code and CSV export implementation are not part of this documentation PR.
+
 The reporting endpoints are defined in `docs/openapi.yaml`. Implementation targets below follow `docs/product_backlog.md`.
 
 | Story | Endpoint / feature | Purpose | Target |
@@ -63,7 +65,7 @@ The reporting endpoints are defined in `docs/openapi.yaml`. Implementation targe
 | US-36 | `GET /reports/utilization` | Vehicle utilisation for the selected period | Final |
 | US-37 | CSV export | Export cost, carbon and utilisation reports | Final |
 
-US-37 has no endpoint defined yet. Its API design must be agreed and added to `docs/openapi.yaml` before implementation.
+**Sprint 2 decision (ADR-006):** US-37 uses existing `GET /reports/cost`, `GET /reports/carbon`, and `GET /reports/utilization` operations with `Accept: text/csv`. No separate CSV endpoint is required, and summary remains JSON-only. This is a contract decision, not implemented functionality.
 
 Request parameters, response schemas and security requirements must follow `docs/openapi.yaml`. A `STAFF` user requesting reports must receive `403 FORBIDDEN`.
 
@@ -79,21 +81,21 @@ Use source records belonging to the selected vehicle and period. Totals must mat
 
 CO₂ emissions = fuel consumed in litres × emission factor for the fuel type.
 
-Factors for petrol, diesel and LPG, their units and authoritative sources remain to be agreed with the Product Owner. No numerical factor is assumed here.
+**Agreed Sprint 2 factors from SRS §3.8 / OpenAPI (kg CO₂ per litre):** GASOLINE 2.31; DIESEL 2.68; HYBRID 2.31 (same per-litre factor as gasoline); ELECTRIC 0.00 (no fuel combusted, not full life-cycle emissions). LPG is not a valid fuel type in the current API schema. These are project assumptions documented in the contract.
 
-Ride-sharing savings must represent emissions avoided by passenger trips not taken separately. The calculation assumptions remain to be agreed and documented before implementation.
+The `rideSharingSavedKgCo2` field estimates emissions avoided by separate passenger trips not taken. Review the estimation assumptions against SRS and API acceptance criteria before implementation; do not invent unsupported constants.
 
 ### Utilisation — US-36
 
 Utilisation (%) = reserved hours / available working hours × 100.
 
-Example: 20 reserved hours / 40 working hours × 100 = 50%.
+Example: 22.5 reserved hours / 45 working hours (5 weekdays × 9 hours/day) × 100 = 50%.
 
-The working calendar, working hours and handling of zero available hours remain to be agreed with the Product Owner. Invalid periods return `400 VALIDATION_ERROR`.
+**Sprint 2 working calendar (SRS §3.8):** Monday–Friday, 08:00–17:00 (9 hours per day) in the Europe/Istanbul time zone, excluding `IN_MAINTENANCE` and `OUT_OF_SERVICE` periods from available hours. Invalid periods return `400 VALIDATION_ERROR`; verify the zero-available-hours behavior against the contract before implementation.
 
 ### CSV Export — US-37
 
-Exported values must match the corresponding report for the same period and filters.
+ADR-006 defines CSV on the three cost, carbon and utilisation GET operations via `Accept: text/csv` (not on summary). UTF-8 CSV uses a header row, comma delimiter, period decimal separator, and one row per vehicle; values must match JSON under identical filters. The response sets `Content-Disposition: attachment` with a generated filename and keeps the same `FLEET_MANAGER` access control.
 
 ## 6. References
 
@@ -101,6 +103,9 @@ Exported values must match the corresponding report for the same period and filt
 - [Git-Flow and contribution rules](git_flow.md)
 - [Product backlog](product_backlog.md)
 - [OpenAPI contract](openapi.yaml)
+- [Sprint 2 SRS](srs/srs.md)
+- [Requirements traceability matrix](srs/traceability_matrix.md)
+- [ADR-006 CSV export decision](adr/ADR-006-notifications-and-csv-export.md)
 - [Test plan and coverage](test_plans_and_coverage.md)
 - [OpenAPI lint workflow](../.github/workflows/openapi-lint.yml)
 - [Redocly configuration](../redocly.yaml)

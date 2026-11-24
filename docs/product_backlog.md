@@ -597,6 +597,8 @@ Acceptance criteria:
 2. **Given** a vehicle averaging 8.0 L/100 km, **when** a receipt gives exactly 10.0 L/100 km (25% above), **then** it is not flagged.
 3. **Given** a receipt dated outside any reservation of that vehicle, **when** it is saved, **then** it is flagged `OUTSIDE_RESERVATION`.
 4. **Given** a `STAFF` user, **when** they request the anomaly list, **then** the request is rejected with 403 `FORBIDDEN`.
+5. **Given** a vehicle with fewer than 3 completed full-tank intervals, **when** a new full-tank receipt is submitted, **then** no `CONSUMPTION_SPIKE` anomaly is flagged (`OUTSIDE_RESERVATION` is still checked).
+
 
 SP: 5 · Priority: Should · Depends on: US-30 · Owner: Abdullah Tecimen · Target: Final  
 API: `POST /fuel-receipts (evaluates)`, `GET /fuel/anomalies`  
@@ -672,7 +674,7 @@ Trace: G5, G6, Demo step 7
 
 Acceptance criteria:
 
-1. **Given** a vehicle reserved 20 of 40 working hours, **when** the utilisation report is requested, **then** 50% utilisation is returned.
+1. **Given** a vehicle reserved 22.5 of 45 working hours (5 weekdays × 9 working hours/day), **when** the utilisation report is requested, **then** 50% utilisation is returned.
 2. **Given** an invalid period, **when** the report is requested, **then** the request is rejected with 400 `VALIDATION_ERROR`.
 
 SP: 3 · Priority: Must · Depends on: US-20 · Owner: Deniz Alp Oniki · Target: Final  

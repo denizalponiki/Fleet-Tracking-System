@@ -6,7 +6,7 @@
 | **Accountable (A) / Responsible (R)** | Ahmet Can Vurmaz (Product Owner & Requirements Engineer) |
 | **Contributors** | Mehmet Umut Oğuzcan (`handover`), Deniz Alp Oniki (`reporting`), Ahmet Tarık Orhan (`reservation`, `carpool` review) |
 | **Version** | 1.0 · Sprint 2 |
-| **Related Documents** | [`product_backlog.md`](../product_backlog.md), [`openapi.yaml`](../openapi.yaml), [`test_plans_and_coverage.md`](../test_plans_and_coverage.md), [`traceability_matrix.md`](traceability_matrix.md) |
+| **Related Documents** | [`product_backlog.md`](../product_backlog.md), [`openapi.yaml`](../openapi.yaml), [`test_plans_and_coverage.md`](../test_plans_and_coverage.md), [`traceability_matrix.md`](traceability_matrix.md), [`use_case_diagram.md`](../uml/use_case_diagram.md) |
 
 ---
 
@@ -44,6 +44,8 @@ FleetSync manages institutional vehicles across their operational lifecycle: use
 
 ## 3. Functional Requirements
 
+> **Use Case Model:** The visual use case diagrams covering all 37 functional user stories (`UC-01`–`UC-37`), actors, `«include»`/`«extend»` relationships, and the jury demo path are maintained in [`docs/uml/use_case_diagram.md`](../uml/use_case_diagram.md).
+
 ### 3.1 Identity, Access & Driver Eligibility (`identity` Module)
 *Owner: Ahmet Can Vurmaz · Stories: US-01 to US-06*
 
@@ -69,6 +71,7 @@ FleetSync manages institutional vehicles across their operational lifecycle: use
   - Every newly registered licence shall default to `verified = false`.
   - If `expiresAt` is in the past (or before `issuedAt`), the system shall reject with `400 VALIDATION_ERROR`.
   - Registering a duplicate licence number/class for the same driver shall return `409 DUPLICATE_LICENSE`.
+  - **Licence Renewal Rule:** `409 DUPLICATE_LICENSE` applies only when the driver already has a non-expired licence of the same `licenseClass` or when the same `licenseNumber` is re-submitted. If an existing licence of that class is expired (`expiresAt < current date`), registering a renewed licence of the same class via `POST /drivers/{driverId}/licenses` is permitted (starting with `verified = false` until verified by a `FLEET_MANAGER`); the expired record is retained for audit history.
   - `GET /drivers/{driverId}` and `GET /drivers/{driverId}/licenses` shall return the driver profile (including computed `canDrive` boolean) and licence list.
 
 #### REQ-ID-04: Driving Licence Verification (US-04)

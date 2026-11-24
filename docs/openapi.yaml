@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: FleetSync API
-  version: 0.1.0
+  version: 1.0.0
   summary: Smart fleet management, periodic maintenance and carpooling platform
   description: |
     REST API contract for FleetSync (API-first). This file is the single source of truth:
@@ -11,6 +11,8 @@ info:
     **Conventions**
     - Every request requires `Authorization: Bearer <JWT>`, except `POST /auth/login`.
     - Timestamps are ISO 8601 with offset (`2026-11-12T08:00:00+03:00`); dates are `YYYY-MM-DD`.
+    - Business time is **Europe/Istanbul** (UTC+3, no daylight saving): report periods (`from`, `to`) and
+      working hours in reports are evaluated in this time zone.
     - Identifiers are UUIDs.
     - Errors use RFC 9457 `application/problem+json`; clients branch on the `code` field.
       400 means invalid input, 409 means a state or scheduling conflict, 422 means a business rule violation.
@@ -19,6 +21,9 @@ info:
     **Roles:** `STAFF` (staff member / driver), `FLEET_MANAGER`, `MAINTENANCE_OFFICER`.
 
     **Change policy:** every change to this file goes through a pull request and needs the Lead Architect's approval (CODEOWNERS).
+    Version 1.0.0 is the contract frozen at the end of Sprint 2 (tag `openapi-v1.0`). From here on, versions follow
+    semantic versioning: wording and example fixes raise the patch (`1.0.1`), backward-compatible additions such as a new
+    optional field or operation raise the minor (`1.1.0`), and removing or renaming anything clients use raises the major (`2.0.0`).
   license:
     name: MIT
     identifier: MIT
@@ -165,6 +170,7 @@ paths:
       operationId: getDriverProfile
       tags: [drivers]
       summary: Return a driver profile with its licences
+      description: 'Allowed for the profile owner or FLEET_MANAGER (licence data is personal data under KVKK, NFR-SEC-05).'
       responses:
         '200':
           description: Driver profile
@@ -172,6 +178,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/DriverProfile' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
     put:
       operationId: updateDriverProfile
@@ -201,6 +208,7 @@ paths:
       operationId: listDriverLicenses
       tags: [drivers]
       summary: List a driver's licences
+      description: 'Allowed for the profile owner or FLEET_MANAGER (licence data is personal data under KVKK, NFR-SEC-05).'
       responses:
         '200':
           description: Licence list
@@ -210,12 +218,15 @@ paths:
                 type: array
                 items: { $ref: '#/components/schemas/License' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
     post:
       operationId: addDriverLicense
       tags: [drivers]
       summary: Add a licence to a driver
-      description: A new licence starts with `verified=false`; a FLEET_MANAGER verifies it after seeing the document.
+      description: |
+        Allowed for the profile owner or FLEET_MANAGER. A new licence starts with `verified=false`;
+        a FLEET_MANAGER verifies it after seeing the document.
       requestBody:
         required: true
         content:
@@ -229,18 +240,33 @@ paths:
               schema: { $ref: '#/components/schemas/License' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
         '409':
-          description: A licence of this class is already registered
+          description: |
+            The licence is already registered: the same licence number was submitted again, or the driver already
+            has a licence of this class that has not expired. Registering a renewed licence after the old one of the
+            same class has expired is allowed; the expired record is kept (SRS REQ-ID-03).
           content:
             application/problem+json:
               schema: { $ref: '#/components/schemas/Problem' }
-              example:
-                type: https://fleetsync.local/problems/duplicate-license
-                title: Licence already registered
-                status: 409
-                code: DUPLICATE_LICENSE
-                detail: The driver already has a class B licence on file.
+              examples:
+                sameClass:
+                  summary: Non-expired licence of the same class
+                  value:
+                    type: https://fleetsync.local/problems/duplicate-license
+                    title: Licence already registered
+                    status: 409
+                    code: DUPLICATE_LICENSE
+                    detail: The driver already has a valid class B licence on file (expires 2031-05-14).
+                sameNumber:
+                  summary: Same licence number submitted again
+                  value:
+                    type: https://fleetsync.local/problems/duplicate-license
+                    title: Licence already registered
+                    status: 409
+                    code: DUPLICATE_LICENSE
+                    detail: Licence number 123456 is already registered.
 
   /drivers/{driverId}/licenses/{licenseId}/verify:
     parameters:
@@ -271,7 +297,9 @@ paths:
       operationId: checkDriverEligibility
       tags: [drivers]
       summary: Check whether a driver may drive a given vehicle until a given time
-      description: The licence class must match the vehicle and the licence must still be valid when the trip ends.
+      description: |
+        Allowed for the driver themself or FLEET_MANAGER. The licence class must match the vehicle and the
+        licence must still be valid when the trip ends. The reservation module calls the same check internally.
       parameters:
         - name: vehicleId
           in: query
@@ -307,6 +335,7 @@ paths:
                         message: The class B licence expires on 2026-11-10; the trip ends on 2026-11-13.
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
 
   # ---------------------------------------------------------------- locations
@@ -1120,6 +1149,12 @@ paths:
       operationId: listMaintenanceAlerts
       tags: [maintenance]
       summary: List maintenance alerts
+      description: |
+        This list is also the in-app notification channel (ADR-006, finding F1). There is no separate
+        notification endpoint and no email in release 1. The web application polls
+        `GET /maintenance/alerts?status=OPEN&size=1` every 60 seconds while a MAINTENANCE_OFFICER or
+        FLEET_MANAGER is signed in, shows `page.totalElements` as the alert badge and the list on the
+        maintenance screen. An alert raised on return is therefore visible within one polling interval.
       parameters:
         - name: status
           in: query
@@ -1265,9 +1300,13 @@ paths:
       operationId: listFuelReceipts
       tags: [fuel]
       summary: List a vehicle's fuel receipts
+      description: |
+        Not paginated; bounded by its period instead (NFR-PERF-02). Without `from` and `to` the server returns the
+        last 92 days up to today (Europe/Istanbul). The period may be at most 366 days; a longer period, or `to`
+        before `from`, returns `400 VALIDATION_ERROR`.
       parameters:
-        - $ref: '#/components/parameters/FromDateOptional'
-        - $ref: '#/components/parameters/ToDateOptional'
+        - $ref: '#/components/parameters/ListFromDate'
+        - $ref: '#/components/parameters/ListToDate'
       responses:
         '200':
           description: Receipts, newest first
@@ -1276,6 +1315,7 @@ paths:
               schema:
                 type: array
                 items: { $ref: '#/components/schemas/FuelReceipt' }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
 
@@ -1303,11 +1343,14 @@ paths:
       operationId: listFuelAnomalies
       tags: [fuel]
       summary: List fuel anomalies
-      description: 'Requires role: FLEET_MANAGER.'
+      description: |
+        Requires role: FLEET_MANAGER. Not paginated; bounded by its period instead (NFR-PERF-02). Without `from`
+        and `to` the server returns the last 92 days up to today (Europe/Istanbul). The period may be at most
+        366 days; a longer period, or `to` before `from`, returns `400 VALIDATION_ERROR`.
       parameters:
         - $ref: '#/components/parameters/VehicleIdQuery'
-        - $ref: '#/components/parameters/FromDateOptional'
-        - $ref: '#/components/parameters/ToDateOptional'
+        - $ref: '#/components/parameters/ListFromDate'
+        - $ref: '#/components/parameters/ListToDate'
       responses:
         '200':
           description: Anomalies, newest first
@@ -1316,6 +1359,7 @@ paths:
               schema:
                 type: array
                 items: { $ref: '#/components/schemas/FuelAnomaly' }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
 
@@ -1324,13 +1368,17 @@ paths:
       operationId: listExpenses
       tags: [fuel]
       summary: List non-fuel expenses
+      description: |
+        Not paginated; bounded by its period instead (NFR-PERF-02). Without `from` and `to` the server returns the
+        last 92 days up to today (Europe/Istanbul). The period may be at most 366 days; a longer period, or `to`
+        before `from`, returns `400 VALIDATION_ERROR`.
       parameters:
         - $ref: '#/components/parameters/VehicleIdQuery'
         - name: category
           in: query
           schema: { $ref: '#/components/schemas/ExpenseCategory' }
-        - $ref: '#/components/parameters/FromDateOptional'
-        - $ref: '#/components/parameters/ToDateOptional'
+        - $ref: '#/components/parameters/ListFromDate'
+        - $ref: '#/components/parameters/ListToDate'
       responses:
         '200':
           description: Expenses
@@ -1339,6 +1387,7 @@ paths:
               schema:
                 type: array
                 items: { $ref: '#/components/schemas/Expense' }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
     post:
       operationId: createExpense
@@ -1384,7 +1433,7 @@ paths:
       operationId: getCostReport
       tags: [reports]
       summary: Fuel, expense and maintenance cost per vehicle
-      description: 'Requires role: FLEET_MANAGER. Returns CSV with `Accept: text/csv`.'
+      description: 'Requires role: FLEET_MANAGER. Returns CSV with `Accept: text/csv` (ADR-006, US-37).'
       parameters:
         - $ref: '#/components/parameters/FromDate'
         - $ref: '#/components/parameters/ToDate'
@@ -1392,6 +1441,8 @@ paths:
       responses:
         '200':
           description: Cost report
+          headers:
+            Content-Disposition: { $ref: '#/components/headers/CsvContentDisposition' }
           content:
             application/json:
               schema: { $ref: '#/components/schemas/CostReport' }
@@ -1409,7 +1460,7 @@ paths:
       operationId: getCarbonReport
       tags: [reports]
       summary: Carbon footprint per vehicle and ride-sharing savings
-      description: 'Requires role: FLEET_MANAGER. kg CO2 = litres × emission factor (gasoline 2.31, diesel 2.68).'
+      description: 'Requires role: FLEET_MANAGER. kg CO2 = litres × emission factor (gasoline 2.31, diesel 2.68). Returns CSV with `Accept: text/csv` (ADR-006, US-37).'
       parameters:
         - $ref: '#/components/parameters/FromDate'
         - $ref: '#/components/parameters/ToDate'
@@ -1417,9 +1468,16 @@ paths:
       responses:
         '200':
           description: Carbon report
+          headers:
+            Content-Disposition: { $ref: '#/components/headers/CsvContentDisposition' }
           content:
             application/json:
               schema: { $ref: '#/components/schemas/CarbonReport' }
+            text/csv:
+              schema: { type: string }
+              example: |
+                plate,fuelType,liters,km,kgCo2,gCo2PerKm
+                06 FS 102,DIESEL,48.50,570,129.98,228.04
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -1429,7 +1487,7 @@ paths:
       operationId: getUtilizationReport
       tags: [reports]
       summary: Utilisation rate per vehicle
-      description: 'Requires role: FLEET_MANAGER. Utilisation = reserved hours / available working hours (maintenance and out-of-service time excluded).'
+      description: 'Requires role: FLEET_MANAGER. Utilisation = reserved hours / available working hours (maintenance and out-of-service time excluded). Returns CSV with `Accept: text/csv` (ADR-006, US-37).'
       parameters:
         - $ref: '#/components/parameters/FromDate'
         - $ref: '#/components/parameters/ToDate'
@@ -1437,9 +1495,16 @@ paths:
       responses:
         '200':
           description: Utilisation report
+          headers:
+            Content-Disposition: { $ref: '#/components/headers/CsvContentDisposition' }
           content:
             application/json:
               schema: { $ref: '#/components/schemas/UtilizationReport' }
+            text/csv:
+              schema: { type: string }
+              example: |
+                plate,reservedHours,availableHours,utilizationPercent
+                06 FS 102,35.0,189.0,18.5
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -1505,6 +1570,24 @@ components:
       name: to
       in: query
       schema: { type: string, format: date }
+    ListFromDate:
+      name: from
+      in: query
+      description: Start date (inclusive). Default 92 days before `to`. At most 366 days before `to`.
+      schema: { type: string, format: date }
+      example: '2026-08-22'
+    ListToDate:
+      name: to
+      in: query
+      description: End date (inclusive). Default today in Europe/Istanbul.
+      schema: { type: string, format: date }
+      example: '2026-11-22'
+
+  headers:
+    CsvContentDisposition:
+      description: Sent only with a `text/csv` response so the browser downloads the file.
+      schema: { type: string }
+      example: attachment; filename="fleetsync-cost-2026-11-01_2026-11-30.csv"
 
   responses:
     BadRequest:
@@ -2247,7 +2330,11 @@ components:
         totalLiters: { type: number }
         totalKm: { type: integer }
         averageLPer100Km: { type: [number, 'null'] }
-        baselineLPer100Km: { type: [number, 'null'], description: The vehicle's all-time average }
+        baselineLPer100Km:
+          type: [number, 'null']
+          description: >-
+            The vehicle's all-time average over completed full-tank intervals, excluding intervals flagged
+            CONSUMPTION_SPIKE; null until at least 3 intervals are completed
         segments:
           type: array
           description: Measurements between two consecutive full tanks
@@ -2345,6 +2432,8 @@ components:
           properties:
             GASOLINE: { type: number, examples: [2.31] }
             DIESEL: { type: number, examples: [2.68] }
+            HYBRID: { type: number, description: Same factor as gasoline per litre, examples: [2.31] }
+            ELECTRIC: { type: number, description: No fuel is burned; electric vehicles report 0, examples: [0.0] }
         rideSharingSavedKgCo2:
           type: number
           description: Estimated emissions avoided through ride sharing
@@ -2366,7 +2455,10 @@ components:
       required: [period, workingHoursPerDay, fleetUtilizationPercent, items]
       properties:
         period: { $ref: '#/components/schemas/ReportPeriod' }
-        workingHoursPerDay: { type: number, examples: [9] }
+        workingHoursPerDay:
+          type: number
+          description: Working hours per working day, evaluated in the Europe/Istanbul time zone
+          examples: [9]
         fleetUtilizationPercent: { type: number }
         items:
           type: array
